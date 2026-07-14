@@ -47,9 +47,9 @@ graph TD
 
     Tasks --> GET_Tasks[GET /api/v1/tasks]
     Tasks --> POST_Tasks[POST /api/v1/tasks]
-    Tasks --> GET_Task[GET /api/v1/tasks/{id}]
-    Tasks --> PUT_Task[PUT /api/v1/tasks/{id}]
-    Tasks --> DELETE_Task[DELETE /api/v1/tasks/{id}]
+    Tasks --> GET_Task["GET /api/v1/tasks/{id}"]
+    Tasks --> PUT_Task["PUT /api/v1/tasks/{id}"]
+    Tasks --> DELETE_Task["DELETE /api/v1/tasks/{id}"]
 
     Users --> GET_Me[GET /api/v1/users/me]
     Users --> PUT_Me[PUT /api/v1/users/me]

@@ -21,9 +21,9 @@ graph LR
     subgraph Task Management
         T1[GET /api/v1/tasks]
         T2[POST /api/v1/tasks]
-        T3[GET /api/v1/tasks/{id}]
-        T4[PUT /api/v1/tasks/{id}]
-        T5[DELETE /api/v1/tasks/{id}]
+        T3["GET /api/v1/tasks/{id}"]
+        T4["PUT /api/v1/tasks/{id}"]
+        T5["DELETE /api/v1/tasks/{id}"]
     end
 
     subgraph System Utility
