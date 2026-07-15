@@ -15,6 +15,35 @@ TaskFlow API is a production-ready, high-performance, asynchronous REST API buil
 
 ---
 
+## Database Schema (ER Diagram)
+
+The relationship diagram below maps out user profiles and task structures in the database:
+
+```mermaid
+erDiagram
+    User ||--o{ Task : "owns"
+    User {
+        uuid id PK
+        string email UK
+        string hashed_password
+        string full_name
+        boolean is_active
+        timestamp created_at
+    }
+    Task {
+        uuid id PK
+        string title
+        text description
+        string status
+        string priority
+        timestamp due_date
+        uuid user_id FK
+        timestamp created_at
+    }
+```
+
+---
+
 ## Architecture Overview
 
 TaskFlow API follows a clean layer separation architecture to isolate business concerns:
@@ -62,6 +91,11 @@ graph TD
 | **Auth** | `POST` | `/auth/register` | Register a new user | Done (Commit 2) |
 | **Auth** | `POST` | `/auth/login` | Authenticate user credentials & return JWT | Done (Commit 2) |
 | **Auth** | `GET` | `/auth/me` | Retrieve profile of the current authenticated user | Done (Commit 2) |
+| **Tasks** | `GET` | `/tasks` | Retrieve paginated tasks owned by user | Done (Commit 3) |
+| **Tasks** | `POST` | `/tasks` | Create a new task | Done (Commit 3) |
+| **Tasks** | `GET` | `/tasks/{id}` | Retrieve details of a specific task by ID | Done (Commit 3) |
+| **Tasks** | `PUT` | `/tasks/{id}` | Update details or status of a specific task | Done (Commit 3) |
+| **Tasks** | `DELETE` | `/tasks/{id}` | Delete a specific task by ID | Done (Commit 3) |
 | **Utility** | `GET` | `/health` | Verify database & server health check | Done (Commit 1) |
 
 ---

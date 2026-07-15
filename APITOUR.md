@@ -100,41 +100,110 @@ graph LR
 
 ---
 
-### 3. Task Management (Planned)
+### 3. Task Management (Implemented)
 
-#### `GET /api/v1/tasks`
-- **Goal**: Retrieve list of tasks owned by the authenticated user.
-- **Query Params**: `status` (completed/pending), `skip` (pagination offset), `limit` (pagination page size).
+#### `GET /tasks`
+- **Goal**: Retrieve a list of tasks owned by the authenticated user with optional filtering by status/priority and pagination support.
 - **Headers**: `Authorization: Bearer <token>`
-- **Response**: `200 OK` with list of task objects.
+- **Query Parameters**:
+  - `status`: `todo`, `in_progress`, `done` (optional)
+  - `priority`: `low`, `medium`, `high` (optional)
+  - `skip`: pagination offset integer, defaults to `0` (optional)
+  - `limit`: pagination record limit, defaults to `10` (optional)
+- **Response**: `200 OK`
+  ```json
+  {
+    "tasks": [
+      {
+        "id": "e4b901d8-7956-42bc-9d0b-71a2be0ef3a0",
+        "title": "Build scaffold",
+        "description": "Initialize repository structure",
+        "status": "todo",
+        "priority": "medium",
+        "due_date": "2026-07-20T12:00:00Z",
+        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+        "created_at": "2026-07-15T17:23:00Z"
+      }
+    ],
+    "total_count": 1,
+    "limit": 10,
+    "offset": 0,
+    "pages": 1
+  }
+  ```
 
-#### `POST /api/v1/tasks`
+#### `POST /tasks`
 - **Goal**: Create a new task.
 - **Headers**: `Authorization: Bearer <token>`
 - **Request Body**:
   ```json
   {
-    "title": "Build scaffold",
-    "description": "Initialize repository structure",
-    "due_date": "2026-07-20T12:00:00Z"
+    "title": "Implement database",
+    "description": "Configure models and migrations",
+    "status": "todo",
+    "priority": "high",
+    "due_date": "2026-07-22T18:00:00Z"
   }
   ```
-- **Response**: `201 Created` with the newly created task.
+- **Response**: `201 Created`
+  ```json
+  {
+    "id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
+    "title": "Implement database",
+    "description": "Configure models and migrations",
+    "status": "todo",
+    "priority": "high",
+    "due_date": "2026-07-22T18:00:00Z",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "created_at": "2026-07-15T17:30:00Z"
+  }
+  ```
 
-#### `GET /api/v1/tasks/{id}`
-- **Goal**: Fetch a single task by ID.
+#### `GET /tasks/{id}`
+- **Goal**: Fetch details of a single task by ID.
 - **Headers**: `Authorization: Bearer <token>`
-- **Response**: `200 OK` with task details.
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
+    "title": "Implement database",
+    "description": "Configure models and migrations",
+    "status": "todo",
+    "priority": "high",
+    "due_date": "2026-07-22T18:00:00Z",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "created_at": "2026-07-15T17:30:00Z"
+  }
+  ```
 
-#### `PUT /api/v1/tasks/{id}`
-- **Goal**: Update details or change status of a specific task.
+#### `PUT /tasks/{id}`
+- **Goal**: Update details or status of a specific task.
 - **Headers**: `Authorization: Bearer <token>`
-- **Response**: `200 OK` with updated task details.
+- **Request Body**:
+  ```json
+  {
+    "status": "in_progress",
+    "priority": "medium"
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
+    "title": "Implement database",
+    "description": "Configure models and migrations",
+    "status": "in_progress",
+    "priority": "medium",
+    "due_date": "2026-07-22T18:00:00Z",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "created_at": "2026-07-15T17:30:00Z"
+  }
+  ```
 
-#### `DELETE /api/v1/tasks/{id}`
-- **Goal**: Delete a task.
+#### `DELETE /tasks/{id}`
+- **Goal**: Delete a task by ID.
 - **Headers**: `Authorization: Bearer <token>`
-- **Response**: `204 No Content`.
+- **Response**: `204 No Content`
 
 ---
 

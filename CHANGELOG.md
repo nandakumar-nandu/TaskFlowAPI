@@ -5,6 +5,16 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-07-15 17:30:00 +05:30
+
+### Added
+- SQLAlchemy Task database model in `app/models/task.py` with custom enums and foreign key mappings.
+- Alembic database migration script for creating the `tasks` table.
+- Pydantic Task validation schemas in `app/schemas/task.py` (TaskCreate, TaskRead, TaskUpdate, TaskListResponse).
+- Business logic service layer in `app/services/task_service.py` incorporating strict task ownership checks.
+- Task CRUD API router endpoints in `app/routes/tasks.py` (GET /tasks, POST /tasks, GET /tasks/{id}, PUT /tasks/{id}, DELETE /tasks/{id}) protected by JWT authorization.
+- Automated integration test suites inside `tests/test_tasks.py`.
+
 ## [0.2.0] - 2026-07-15 17:23:00 +05:30
 
 ### Added
