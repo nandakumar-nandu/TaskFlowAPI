@@ -55,6 +55,49 @@ graph TD
     Users --> PUT_Me[PUT /api/v1/users/me]
 ```
 
+### Endpoints Status Reference Table
+
+| Resource | Method | Path | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Auth** | `POST` | `/auth/register` | Register a new user | Done (Commit 2) |
+| **Auth** | `POST` | `/auth/login` | Authenticate user credentials & return JWT | Done (Commit 2) |
+| **Auth** | `GET` | `/auth/me` | Retrieve profile of the current authenticated user | Done (Commit 2) |
+| **Utility** | `GET` | `/health` | Verify database & server health check | Done (Commit 1) |
+
+---
+
+## JWT Authentication Flow
+
+The sequence diagram below displays the end-to-end user registration and JWT token request lifecycle:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Client App
+    participant API as FastAPI App
+    participant DB as PostgreSQL DB
+
+    Note over Client, DB: JWT Authentication Flow
+    Client->>API: POST /auth/register (email, password, full_name)
+    API->>API: Hash password (bcrypt)
+    API->>DB: Save User to DB
+    DB-->>API: Confirm Save
+    API-->>Client: Returns User Profile (UserRead)
+
+    Client->>API: POST /auth/login (email, password)
+    API->>DB: Fetch User by Email
+    DB-->>API: User Data (hashed_password)
+    API->>API: Verify Password (bcrypt)
+    API->>API: Generate Access Token (JWT)
+    API-->>Client: Returns JWT Access Token
+
+    Client->>API: GET /auth/me (Authorization: Bearer <token>)
+    API->>API: Validate JWT Signature (pyjwt)
+    API->>DB: Query User from subject ID
+    DB-->>API: User Object
+    API-->>Client: Returns current user profile
+```
+
 ---
 
 ## Request Lifecycle

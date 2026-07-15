@@ -1,6 +1,6 @@
 # API Tour - TaskFlow API Endpoints
 
-This document maps out the endpoint routes and payload schemas planned for the TaskFlow API.
+This document maps out the endpoint routes and payload schemas planned and built for the TaskFlow API.
 
 ---
 
@@ -8,66 +8,90 @@ This document maps out the endpoint routes and payload schemas planned for the T
 
 ```mermaid
 graph LR
-    subgraph Authentication
-        A1[POST /api/v1/auth/register]
-        A2[POST /api/v1/auth/login]
+    subgraph Authentication & Profile
+        A1["POST /auth/register"]
+        A2["POST /auth/login"]
+        A3["GET /auth/me"]
     end
 
-    subgraph User Profiles
-        U1[GET /api/v1/users/me]
-        U2[PUT /api/v1/users/me]
+    subgraph User Settings (Planned)
+        U2["PUT /api/v1/users/me"]
     end
 
-    subgraph Task Management
-        T1[GET /api/v1/tasks]
-        T2[POST /api/v1/tasks]
+    subgraph Task Management (Planned)
+        T1["GET /api/v1/tasks"]
+        T2["POST /api/v1/tasks"]
         T3["GET /api/v1/tasks/{id}"]
         T4["PUT /api/v1/tasks/{id}"]
         T5["DELETE /api/v1/tasks/{id}"]
     end
 
     subgraph System Utility
-        H1[GET /health]
+        H1["GET /health"]
     end
 ```
 
 ---
 
-## Planned API Route Reference
+## API Route Reference
 
 ### 1. Authentication Endpoints
 
-#### `POST /api/v1/auth/register`
+#### `POST /auth/register`
 - **Goal**: Register a new user in the database.
 - **Request Body**:
   ```json
   {
-    "username": "example_user",
+    "email": "user@example.com",
+    "password": "strongpassword123",
+    "full_name": "John Doe"
+  }
+  ```
+- **Response**: `201 Created`
+  ```json
+  {
+    "id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "is_active": true,
+    "created_at": "2026-07-15T17:23:00.123456Z"
+  }
+  ```
+
+#### `POST /auth/login`
+- **Goal**: Verify user credentials and issue an authentication JWT access token.
+- **Request Body**:
+  ```json
+  {
     "email": "user@example.com",
     "password": "strongpassword123"
   }
   ```
-- **Response**: `201 Created` with created user summary.
-
-#### `POST /api/v1/auth/login`
-- **Goal**: Verify user credentials and issue an authentication token.
-- **Request Body**:
+- **Response**: `200 OK`
   ```json
   {
-    "username": "example_user",
-    "password": "strongpassword123"
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YjBhODhiZi05N2NjLTQ0YTMtYWQ2Yy05NDExNjQ5YjgwMzIiLCJleHAiOjE3ODUwMzAzMDZ9...",
+    "token_type": "bearer"
   }
   ```
-- **Response**: `200 OK` with JWT token.
+
+#### `GET /auth/me`
+- **Goal**: Fetch current authenticated user's profile details.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "is_active": true,
+    "created_at": "2026-07-15T17:23:00.123456Z"
+  }
+  ```
 
 ---
 
-### 2. User Settings
-
-#### `GET /api/v1/users/me`
-- **Goal**: Fetch current authenticated user's details.
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `200 OK` with user details.
+### 2. User Settings (Planned)
 
 #### `PUT /api/v1/users/me`
 - **Goal**: Update profile details of the current authenticated user.
@@ -76,7 +100,7 @@ graph LR
 
 ---
 
-### 3. Task Management
+### 3. Task Management (Planned)
 
 #### `GET /api/v1/tasks`
 - **Goal**: Retrieve list of tasks owned by the authenticated user.

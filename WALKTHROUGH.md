@@ -11,15 +11,15 @@ TaskFlow API provides core functionality to:
 
 ---
 
-## Authentication Flow (🚧 Work In Progress)
+## Authentication Flow
 
 > [!NOTE]
-> Authentication is not yet activated in Commit 1. Once implemented, it will utilize standard JSON Web Tokens (JWT) inside HTTP Authorization headers (`Authorization: Bearer <token>`).
+> Authentication is fully implemented in Commit 2. It utilizes JSON Web Tokens (JWT) inside HTTP Authorization headers (`Authorization: Bearer <token>`).
 
-The future authorization pipeline is designed as follows:
-- **Password Encryption**: Scrypt or bcrypt algorithms to store securely hashed user passwords in the DB.
-- **Token Generation**: Custom tokens containing cryptographic signatures, matching user identities and issue timestamps.
-- **Route Guarding**: Dependencies configured on specific routes to extract and validate tokens before executing route actions.
+The authorization pipeline operates as follows:
+- **Password Encryption**: Uses the `bcrypt` library to securely hash and verify passwords during user registration and login, ensuring hashes are salted and resistant to timing and brute-force attacks.
+- **Token Generation**: Uses the `pyjwt` library to sign JSON Web Tokens with a secure `HS256` HMAC algorithm using the application's `SECRET_KEY`.
+- **Route Guarding**: FastAPI security dependency `HTTPBearer` extracts and decodes the token from the request header, loading the current user context directly into guarded endpoints.
 
 ---
 
