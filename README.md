@@ -84,20 +84,21 @@ graph TD
 
 ---
 
-## Planned API Endpoints
+## API Endpoints Structure
 
-The planned API endpoints are structured by resource domain:
+The API endpoints are structured by resource domain:
 
 ```mermaid
 graph TD
     API[TaskFlow API]
-    API --> Auth[Auth Resource]
-    API --> Tasks[Tasks Resource]
-    API --> Categories[Categories Resource]
-    API --> Users[Users Resource]
+    API --> Auth[Auth Domain]
+    API --> Tasks[Tasks Domain]
+    API --> Categories[Categories Domain]
+    API --> Health[Utility Health]
 
     Auth --> POST_Login[POST /auth/login]
     Auth --> POST_Register[POST /auth/register]
+    Auth --> GET_Me[GET /auth/me]
 
     Tasks --> GET_Tasks[GET /tasks]
     Tasks --> POST_Tasks[POST /tasks]
@@ -111,27 +112,27 @@ graph TD
     Categories --> PUT_Category["PUT /categories/{id}"]
     Categories --> DELETE_Category["DELETE /categories/{id}"]
 
-    Users --> GET_Me[GET /auth/me]
+    Health --> GET_Health[GET /health]
 ```
 
-### Endpoints Status Reference Table
+### API Endpoint Reference Table
 
-| Resource | Method | Path | Description | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **Auth** | `POST` | `/auth/register` | Register a new user | Done (Commit 2) |
-| **Auth** | `POST` | `/auth/login` | Authenticate user credentials & return JWT | Done (Commit 2) |
-| **Auth** | `GET` | `/auth/me` | Retrieve profile of the current authenticated user | Done (Commit 2) |
-| **Tasks** | `GET` | `/tasks` | Retrieve paginated tasks owned by user with filter & sort | Done (Commit 4) |
-| **Tasks** | `POST` | `/tasks` | Create a new task (with optional category and tags) | Done (Commit 4) |
-| **Tasks** | `GET` | `/tasks/{id}` | Retrieve details of a specific task by ID | Done (Commit 3) |
-| **Tasks** | `PUT` | `/tasks/{id}` | Update details, category, or tags of a specific task | Done (Commit 4) |
-| **Tasks** | `DELETE` | `/tasks/{id}` | Delete a specific task by ID | Done (Commit 3) |
-| **Categories** | `GET` | `/categories` | Retrieve all categories owned by user | Done (Commit 4) |
-| **Categories** | `POST` | `/categories` | Create a new category | Done (Commit 4) |
-| **Categories** | `GET` | `/categories/{id}` | Retrieve details of a specific category by ID | Done (Commit 4) |
-| **Categories** | `PUT` | `/categories/{id}` | Update a specific category's name | Done (Commit 4) |
-| **Categories** | `DELETE` | `/categories/{id}` | Delete a category (tasks' category is set to NULL) | Done (Commit 4) |
-| **Utility** | `GET` | `/health` | Verify database & server health check | Done (Commit 1) |
+| Domain | HTTP Method | Path | Authentication | Request Payload / Params | Success Response | Description |
+| :--- | :---: | :--- | :---: | :--- | :---: | :--- |
+| **Auth** | `POST` | `/auth/register` | None | `UserCreate` JSON body | `201 Created` (`UserRead`) | Registers a new user account |
+| **Auth** | `POST` | `/auth/login` | None | `UserLogin` JSON body | `200 OK` (`Token` JWT) | Authenticates credentials and returns a JWT |
+| **Auth** | `GET` | `/auth/me` | JWT Bearer | None | `200 OK` (`UserRead`) | Retrieves profile of the logged-in user |
+| **Tasks** | `GET` | `/tasks` | JWT Bearer | Query filters, sort, page | `200 OK` (`TaskListResponse`) | Retrieves paginated user tasks with filters & sorting |
+| **Tasks** | `POST` | `/tasks` | JWT Bearer | `TaskCreate` JSON body | `201 Created` (`TaskRead`) | Creates a new task with categories and tags |
+| **Tasks** | `GET` | `/tasks/{id}` | JWT Bearer | Path: Task UUID | `200 OK` (`TaskRead`) | Retrieves details of a specific user task |
+| **Tasks** | `PUT` | `/tasks/{id}` | JWT Bearer | `TaskUpdate` JSON body | `200 OK` (`TaskRead`) | Updates properties, category, or tags of a task |
+| **Tasks** | `DELETE` | `/tasks/{id}` | JWT Bearer | Path: Task UUID | `204 No Content` | Permanently deletes a task owned by the user |
+| **Categories** | `GET` | `/categories` | JWT Bearer | None | `200 OK` (`List[CategoryRead]`) | Retrieves all categories created by the user |
+| **Categories** | `POST` | `/categories` | JWT Bearer | `CategoryCreate` JSON body | `201 Created` (`CategoryRead`) | Creates a new task category |
+| **Categories** | `GET` | `/categories/{id}` | JWT Bearer | Path: Category UUID | `200 OK` (`CategoryRead`) | Retrieves details of a specific category |
+| **Categories** | `PUT` | `/categories/{id}` | JWT Bearer | `CategoryUpdate` JSON body | `200 OK` (`CategoryRead`) | Updates name of an existing user category |
+| **Categories** | `DELETE` | `/categories/{id}` | JWT Bearer | Path: Category UUID | `204 No Content` | Deletes category (associated tasks set category_id to NULL) |
+| **Utility** | `GET` | `/health` | None | None | `200 OK` (Health JSON) | Performs database and server connectivity check |
 
 ### `GET /tasks` Query Parameters Reference Table
 
@@ -185,13 +186,13 @@ sequenceDiagram
 
 ## Request Lifecycle
 
-The standard flow of an incoming HTTP request through the API layer:
+The standard flow of an incoming HTTP request through the API layer, incorporating rate limiting and validation middleware:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Client
-    participant MW as Middleware (CORS / Logging)
+    participant MW as Middleware (CORS / Logging / Rate Limiting)
     participant Route as FastAPI Router (/tasks)
     participant Auth as Auth Dependency (JWT Verify)
     participant Service as Business Service (TaskService)
@@ -199,6 +200,8 @@ sequenceDiagram
     participant PG as PostgreSQL Database
 
     Client->>MW: HTTP Request
+    MW->>MW: Check rate limits (slowapi)
+    Note right of MW: Aborts with 429 if client requests exceed 100/min
     MW->>Route: Pass request
     Route->>Auth: Authenticate Request
     Auth-->>Route: User Context
@@ -259,9 +262,7 @@ To generate a dynamic coverage badge image (`coverage.svg`), you can use the `co
    ```
 This reads the latest `.coverage` file in the project root and outputs an SVG badge representing the coverage percentage (e.g., `91%`).
 
----
-
-## Docker Setup
+## Docker Quickstart
 
 TaskFlow API is fully containerized using **Docker** and **Docker Compose**, providing a consistent local environment for development and production deployments.
 
@@ -295,9 +296,30 @@ docker-compose down -v
 
 ---
 
-## Interactive Swagger API Documentation
+## Railway Cloud Deployment
+
+TaskFlow API is pre-configured for instant deployment on [Railway](https://railway.app).
+
+### 🚀 Step-by-Step Deployment Guide
+1. **Prepare Project**: Sign in to Railway and create a new project.
+2. **Link GitHub**: Click **Deploy from GitHub repo** and select your `TaskFlowAPI` repository.
+3. **Provision Database**:
+   - Add a **PostgreSQL** database service to your Railway workspace.
+4. **Configure Environment Variables**:
+   - Navigate to the **Variables** tab of the API service and add:
+     - `DATABASE_URL`: Set to `${{ Postgres.DATABASE_PRIVATE_URL }}` (Railway automatically maps this private connection string between the database and the API).
+     - `SECRET_KEY`: Enter a cryptographically secure random key string.
+     - `ACCESS_TOKEN_EXPIRE_MINUTES`: Set to `30` or your preferred JWT lifetime.
+5. **Auto Deployment**: Railway will automatically detect the [Dockerfile](file:///d:/projects/TaskFlowAPI/Dockerfile) and [Procfile](file:///d:/projects/TaskFlowAPI/Procfile), build your application container, run migrations, and publish the API.
+
+---
+
+## Swagger API Documentation
 
 FastAPI automatically parses endpoint routing, models schemas, and security scopes to render an interactive Swagger UI dashboard. 
+
+- **Live Deployment Link**: [TaskFlow API Swagger UI](https://taskflowapi-production.up.railway.app/docs) (Placeholder Link)
+- **Local Development Link**: [Local API Docs](http://localhost:8000/docs)
 
 You can view response schemas, parameter configurations, and trigger requests directly from the browser:
 

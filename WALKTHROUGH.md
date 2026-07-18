@@ -68,10 +68,11 @@ TaskFlow API employs a comprehensive integration testing framework built on **py
 
 ---
 
-## Containerization & Continuous Integration
+## Containerization, Security, & Continuous Integration
 
-TaskFlow API integrates robust container configuration and automatic delivery checks:
+TaskFlow API integrates robust security limits, container configuration, and automatic delivery checks:
 
+- **Rate Limiting (Security)**: Integrates `slowapi` rate limiting middleware globally, enforcing an IP-based request threshold of **100 requests per minute**. Over-limit requests return standard `429 Too Many Requests` responses. The limiter is automatically bypassed during testing to prevent pipeline interference.
 - **Dockerization**: The app is built on a custom [Dockerfile](file:///d:/projects/TaskFlowAPI/Dockerfile) leveraging a python-slim base image, multi-stage builder patterns, and clean pip upgrades.
 - **Docker Compose Setup**: Development and hosting setups are automated using [docker-compose.yml](file:///d:/projects/TaskFlowAPI/docker-compose.yml), linking API servers, Postgres DB containers, and a dev-only pgAdmin GUI.
 - **CI Pipelines (GitHub Actions)**: Every push or PR automatically runs [.github/workflows/ci.yml](file:///d:/projects/TaskFlowAPI/.github/workflows/ci.yml) validating environment installations and running the full integration test suite.

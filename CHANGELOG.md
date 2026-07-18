@@ -5,6 +5,14 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-07-18 09:05:00 +05:30
+
+### Added
+- IP-based rate limiting security middleware using `slowapi` library, defaulting to 100 requests per minute with client bypasses configured during unit testing.
+- Platform descriptor file `Procfile` configured to launch uvicorn processes on cloud hosting services like Railway.
+- Extensively documented environment configuration references in `.env.example`.
+- Completed all architecture Mermaid diagrams, API references, Docker Quickstarts, and cloud deployment guides inside `README.md` and walkthroughs.
+
 ## [0.6.0] - 2026-07-18 09:00:00 +05:30
 
 ### Added

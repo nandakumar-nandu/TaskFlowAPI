@@ -92,19 +92,9 @@ graph LR
     "created_at": "2026-07-15T17:23:00.123456Z"
   }
   ```
-
 ---
 
-### 2. User Settings (Planned)
-
-#### `PUT /api/v1/users/me`
-- **Goal**: Update profile details of the current authenticated user.
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `200 OK` with updated user details.
-
----
-
-### 3. Task Management (Implemented)
+### 2. Task Management (Implemented)
 
 #### `GET /tasks`
 - **Goal**: Retrieve a list of tasks owned by the authenticated user with optional filtering by status/priority/category/tag, sorting, and pagination support.
@@ -260,7 +250,7 @@ graph LR
 
 ---
 
-### 4. Category Management (Implemented)
+### 3. Category Management (Implemented)
 
 #### `GET /categories`
 - **Goal**: Retrieve a list of all categories owned by the authenticated user.
@@ -335,7 +325,7 @@ graph LR
 
 ---
 
-### 5. Health Check
+### 4. Health Check
 
 #### `GET /health`
 - **Goal**: Perform immediate service connectivity diagnostics.

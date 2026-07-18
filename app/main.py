@@ -11,13 +11,27 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.database import get_db
 
+import sys
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 from app.routes.auth import router as auth_router
 from app.routes.tasks import router as tasks_router
 from app.routes.categories import router as categories_router
 
+# ⚙️ Configure API Rate Limiting strategy: IP-based rate limiting (using get_remote_address)
+# 🛡️ Global default limit: 100 requests per minute.
+# 🧪 Rate limiter is disabled during unit/integration test runs (checked via sys.modules) to avoid test interference.
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["100/minute"],
+    enabled="pytest" not in sys.modules
+)
+
 app = FastAPI(
     title="TaskFlow API",
-    version="0.6.0",
+    version="1.0.0",
     description=(
         "TaskFlow API is a production-ready, high-performance, asynchronous REST API "
         "built with Python, FastAPI, and PostgreSQL.\n\n"
@@ -30,6 +44,10 @@ app = FastAPI(
         "url": "https://github.com/nandakumar-nandu/TaskFlowAPI"
     }
 )
+
+# ⚙️ Attach rate limiter state and error handlers to application instance
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 🛣️ Include API routers
 app.include_router(auth_router)
