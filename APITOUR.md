@@ -14,16 +14,20 @@ graph LR
         A3["GET /auth/me"]
     end
 
-    subgraph User Settings (Planned)
-        U2["PUT /api/v1/users/me"]
+    subgraph Task Management (Implemented)
+        T1["GET /tasks"]
+        T2["POST /tasks"]
+        T3["GET /tasks/{id}"]
+        T4["PUT /tasks/{id}"]
+        T5["DELETE /tasks/{id}"]
     end
 
-    subgraph Task Management (Planned)
-        T1["GET /api/v1/tasks"]
-        T2["POST /api/v1/tasks"]
-        T3["GET /api/v1/tasks/{id}"]
-        T4["PUT /api/v1/tasks/{id}"]
-        T5["DELETE /api/v1/tasks/{id}"]
+    subgraph Category Management (Implemented)
+        C1["GET /categories"]
+        C2["POST /categories"]
+        C3["GET /categories/{id}"]
+        C4["PUT /categories/{id}"]
+        C5["DELETE /categories/{id}"]
     end
 
     subgraph System Utility
@@ -103,13 +107,17 @@ graph LR
 ### 3. Task Management (Implemented)
 
 #### `GET /tasks`
-- **Goal**: Retrieve a list of tasks owned by the authenticated user with optional filtering by status/priority and pagination support.
+- **Goal**: Retrieve a list of tasks owned by the authenticated user with optional filtering by status/priority/category/tag, sorting, and pagination support.
 - **Headers**: `Authorization: Bearer <token>`
 - **Query Parameters**:
   - `status`: `todo`, `in_progress`, `done` (optional)
   - `priority`: `low`, `medium`, `high` (optional)
-  - `skip`: pagination offset integer, defaults to `0` (optional)
-  - `limit`: pagination record limit, defaults to `10` (optional)
+  - `category_id`: Category UUID filter (optional)
+  - `tag`: Tag name string filter, e.g. `work` (optional)
+  - `page`: Page index number starting at 1, defaults to `1` (optional)
+  - `limit`: Page records limit, defaults to `10` (optional)
+  - `sort`: Column name to sort by, defaults to `created_at` (optional)
+  - `order`: Sort direction: `asc` or `desc`, defaults to `desc` (optional)
 - **Response**: `200 OK`
   ```json
   {
@@ -121,8 +129,17 @@ graph LR
         "status": "todo",
         "priority": "medium",
         "due_date": "2026-07-20T12:00:00Z",
+        "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
         "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-        "created_at": "2026-07-15T17:23:00Z"
+        "created_at": "2026-07-15T17:23:00Z",
+        "tags": [
+          {
+            "id": "c1a901e9-8967-43cd-ad1c-82b3cf1fg401",
+            "name": "work",
+            "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+            "created_at": "2026-07-15T17:25:00Z"
+          }
+        ]
       }
     ],
     "total_count": 1,
@@ -133,7 +150,7 @@ graph LR
   ```
 
 #### `POST /tasks`
-- **Goal**: Create a new task.
+- **Goal**: Create a new task (with optional category mapping and inline tags creation).
 - **Headers**: `Authorization: Bearer <token>`
 - **Request Body**:
   ```json
@@ -142,7 +159,9 @@ graph LR
     "description": "Configure models and migrations",
     "status": "todo",
     "priority": "high",
-    "due_date": "2026-07-22T18:00:00Z"
+    "due_date": "2026-07-22T18:00:00Z",
+    "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
+    "tags": ["work", "important"]
   }
   ```
 - **Response**: `201 Created`
@@ -154,8 +173,23 @@ graph LR
     "status": "todo",
     "priority": "high",
     "due_date": "2026-07-22T18:00:00Z",
+    "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
     "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "created_at": "2026-07-15T17:30:00Z"
+    "created_at": "2026-07-15T17:30:00Z",
+    "tags": [
+      {
+        "id": "c1a901e9-8967-43cd-ad1c-82b3cf1fg401",
+        "name": "work",
+        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+        "created_at": "2026-07-15T17:25:00Z"
+      },
+      {
+        "id": "c2a901e9-8967-43cd-ad1c-82b3cf1fg402",
+        "name": "important",
+        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+        "created_at": "2026-07-15T17:30:00Z"
+      }
+    ]
   }
   ```
 
@@ -171,19 +205,29 @@ graph LR
     "status": "todo",
     "priority": "high",
     "due_date": "2026-07-22T18:00:00Z",
+    "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
     "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "created_at": "2026-07-15T17:30:00Z"
+    "created_at": "2026-07-15T17:30:00Z",
+    "tags": [
+      {
+        "id": "c1a901e9-8967-43cd-ad1c-82b3cf1fg401",
+        "name": "work",
+        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+        "created_at": "2026-07-15T17:25:00Z"
+      }
+    ]
   }
   ```
 
 #### `PUT /tasks/{id}`
-- **Goal**: Update details or status of a specific task.
+- **Goal**: Update details, status, category, or tags of a specific task.
 - **Headers**: `Authorization: Bearer <token>`
 - **Request Body**:
   ```json
   {
     "status": "in_progress",
-    "priority": "medium"
+    "priority": "medium",
+    "tags": ["work"]
   }
   ```
 - **Response**: `200 OK`
@@ -195,8 +239,17 @@ graph LR
     "status": "in_progress",
     "priority": "medium",
     "due_date": "2026-07-22T18:00:00Z",
+    "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
     "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "created_at": "2026-07-15T17:30:00Z"
+    "created_at": "2026-07-15T17:30:00Z",
+    "tags": [
+      {
+        "id": "c1a901e9-8967-43cd-ad1c-82b3cf1fg401",
+        "name": "work",
+        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+        "created_at": "2026-07-15T17:25:00Z"
+      }
+    ]
   }
   ```
 
@@ -207,7 +260,82 @@ graph LR
 
 ---
 
-### 4. Health Check
+### 4. Category Management (Implemented)
+
+#### `GET /categories`
+- **Goal**: Retrieve a list of all categories owned by the authenticated user.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `200 OK`
+  ```json
+  [
+    {
+      "id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
+      "name": "Work Tasks",
+      "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+      "created_at": "2026-07-15T17:23:00Z"
+    }
+  ]
+  ```
+
+#### `POST /categories`
+- **Goal**: Create a new category.
+- **Headers**: `Authorization: Bearer <token>`
+- **Request Body**:
+  ```json
+  {
+    "name": "Personal Tasks"
+  }
+  ```
+- **Response**: `201 Created`
+  ```json
+  {
+    "id": "9a0b88bf-97cc-44a3-ad6c-9411649b8055",
+    "name": "Personal Tasks",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "created_at": "2026-07-15T17:35:00Z"
+  }
+  ```
+
+#### `GET /categories/{id}`
+- **Goal**: Retrieve details of a specific category by ID.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
+    "name": "Work Tasks",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "created_at": "2026-07-15T17:23:00Z"
+  }
+  ```
+
+#### `PUT /categories/{id}`
+- **Goal**: Update details of a specific category.
+- **Headers**: `Authorization: Bearer <token>`
+- **Request Body**:
+  ```json
+  {
+    "name": "Office Tasks"
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
+    "name": "Office Tasks",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "created_at": "2026-07-15T17:23:00Z"
+  }
+  ```
+
+#### `DELETE /categories/{id}`
+- **Goal**: Delete a category.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `204 No Content`
+
+---
+
+### 5. Health Check
 
 #### `GET /health`
 - **Goal**: Perform immediate service connectivity diagnostics.
@@ -218,3 +346,4 @@ graph LR
     "database": "connected"
   }
   ```
+

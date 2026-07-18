@@ -5,6 +5,18 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-07-18 08:45:00 +05:30
+
+### Added
+- Database models for `Category` (`app/models/category.py`) and `Tag` (`app/models/tag.py`) with user ownership and comments.
+- Junction table `task_tags` establishing a many-to-many relationship between tasks and tags.
+- Alembic database migration file `7ae8a893652f` to create the new tables, add `category_id` FK column to `tasks`, and provision optimized query indexes.
+- Database indexes on `tasks` table columns (`user_id`, `status`, `priority`, `category_id`, `due_date`) for query performance optimization.
+- Category CRUD service methods and endpoint routes in `/categories`.
+- Advanced task filtering (by `category_id` and `tag`), dynamic sorting (`due_date`, `created_at`, etc.), and pagination (`page`, `limit`) inside `GET /tasks`.
+- Automatic tag resolve & association in `POST /tasks` and `PUT /tasks/{id}` based on tag names.
+- Integration tests in `tests/test_categories.py` and `tests/test_tasks.py` to cover all Commit 4 functionality.
+
 ## [0.3.0] - 2026-07-15 17:30:00 +05:30
 
 ### Added

@@ -11,6 +11,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from app.models.task import TaskStatus, TaskPriority
+from app.schemas.tag import TagRead
 
 
 class TaskBase(BaseModel):
@@ -37,11 +38,18 @@ class TaskBase(BaseModel):
         None,
         description="Optional deadline timestamp (UTC timezone-aware)."
     )
+    category_id: Optional[uuid.UUID] = Field(
+        None,
+        description="Optional unique identifier of the category."
+    )
 
 
 class TaskCreate(TaskBase):
     # 📝 Data required during task creation
-    pass
+    tags: Optional[List[str]] = Field(
+        None,
+        description="Optional array of tag names to associate with the task."
+    )
 
 
 class TaskUpdate(BaseModel):
@@ -68,6 +76,14 @@ class TaskUpdate(BaseModel):
         None,
         description="Optional updated deadline timestamp."
     )
+    category_id: Optional[uuid.UUID] = Field(
+        None,
+        description="Optional updated category identifier."
+    )
+    tags: Optional[List[str]] = Field(
+        None,
+        description="Optional updated list of tag names (replaces existing tags)."
+    )
 
 
 class TaskRead(TaskBase):
@@ -83,6 +99,10 @@ class TaskRead(TaskBase):
     created_at: datetime = Field(
         ...,
         description="Timestamp when the task record was created."
+    )
+    tags: List[TagRead] = Field(
+        default_factory=list,
+        description="List of tag records associated with this task."
     )
 
     # ⚙️ Enable Pydantic v2 ORM mapping compatibility
@@ -113,3 +133,4 @@ class TaskListResponse(BaseModel):
         ...,
         description="The total calculated pages based on total_count and limit."
     )
+

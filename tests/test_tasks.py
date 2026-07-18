@@ -17,6 +17,8 @@ from app.core.database import get_db
 from app.core.security import create_access_token
 from app.models.user import User
 from app.models.task import Task, TaskStatus, TaskPriority
+from app.models.category import Category
+from app.models.tag import Tag
 
 # 🧪 Mark all tests as asynchronous
 pytestmark = pytest.mark.asyncio
@@ -320,3 +322,124 @@ async def test_task_endpoint_security_denied():
         response = await ac.get("/tasks")
         
     assert response.status_code == 401
+
+
+async def test_create_task_with_category_and_tags():
+    """
+    🧪 Test registering a new task with category and tags
+    """
+    mock_db = AsyncMock(spec=AsyncSession)
+    user, headers = setup_auth_context(mock_db)
+    app.dependency_overrides[get_db] = lambda: mock_db
+    
+    category_id = uuid.uuid4()
+    mock_category = Category(id=category_id, name="Work Tasks", user_id=user.id)
+    
+    # ⚙️ Mock side effects:
+    # 1. Fetching current user
+    # 2. Category validation check
+    # 3. Tag existence search (none exist initially, so resolved as new tags)
+    mock_category_result = MagicMock()
+    mock_category_result.scalar_one_or_none.return_value = mock_category
+    
+    mock_tag_result = MagicMock()
+    mock_tag_result.scalar_one_or_none.return_value = None  # tag created
+    
+    mock_db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
+        mock_category_result,
+        mock_tag_result,
+        mock_tag_result
+    ]
+    
+    # Setup database refresh simulation to load relationships
+    tag1 = Tag(id=uuid.uuid4(), name="work", user_id=user.id, created_at=datetime.now(timezone.utc))
+    tag2 = Tag(id=uuid.uuid4(), name="important", user_id=user.id, created_at=datetime.now(timezone.utc))
+    
+    def mock_refresh(obj):
+        if isinstance(obj, Task):
+            obj.id = uuid.uuid4()
+            obj.created_at = datetime.now(timezone.utc)
+            obj.user_id = user.id
+            obj.category_id = category_id
+            obj.tags = [tag1, tag2]
+            
+    mock_db.refresh.side_effect = mock_refresh
+    
+    task_payload = {
+        "title": "Task with category and tags",
+        "category_id": str(category_id),
+        "tags": ["work", "important"]
+    }
+    
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test"
+    ) as ac:
+        response = await ac.post("/tasks", json=task_payload, headers=headers)
+        
+    assert response.status_code == 201
+    json_resp = response.json()
+    assert json_resp["title"] == "Task with category and tags"
+    assert json_resp["category_id"] == str(category_id)
+    assert len(json_resp["tags"]) == 2
+    assert json_resp["tags"][0]["name"] == "work"
+    assert json_resp["tags"][1]["name"] == "important"
+    
+    app.dependency_overrides.clear()
+
+
+async def test_get_tasks_with_complex_query():
+    """
+    🧪 Test retrieving task list with category, tag, sort, order, page, and limit parameters.
+    """
+    mock_db = AsyncMock(spec=AsyncSession)
+    user, headers = setup_auth_context(mock_db)
+    app.dependency_overrides[get_db] = lambda: mock_db
+    
+    category_id = uuid.uuid4()
+    task = Task(
+        id=uuid.uuid4(),
+        title="Filtered Task",
+        status=TaskStatus.TODO,
+        priority=TaskPriority.HIGH,
+        category_id=category_id,
+        user_id=user.id,
+        created_at=datetime.now(timezone.utc),
+        tags=[]
+    )
+    
+    mock_count_res = MagicMock()
+    mock_count_res.scalar.return_value = 1
+    
+    mock_tasks_res = MagicMock()
+    mock_tasks_res.scalars.return_value.all.return_value = [task]
+    
+    mock_db.execute.side_effect = [
+        # user details query
+        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
+        # total count query
+        mock_count_res,
+        # filtered tasks query
+        mock_tasks_res
+    ]
+    
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test"
+    ) as ac:
+        response = await ac.get(
+            f"/tasks?status=todo&priority=high&category_id={category_id}&tag=work&page=1&limit=5&sort=due_date&order=asc",
+            headers=headers
+        )
+        
+    assert response.status_code == 200
+    json_resp = response.json()
+    assert json_resp["total_count"] == 1
+    assert json_resp["limit"] == 5
+    assert json_resp["offset"] == 0
+    assert json_resp["pages"] == 1
+    assert len(json_resp["tasks"]) == 1
+    assert json_resp["tasks"][0]["title"] == "Filtered Task"
+    
+    app.dependency_overrides.clear()

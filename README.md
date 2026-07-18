@@ -17,11 +17,16 @@ TaskFlow API is a production-ready, high-performance, asynchronous REST API buil
 
 ## Database Schema (ER Diagram)
 
-The relationship diagram below maps out user profiles and task structures in the database:
+The relationship diagram below maps out user profiles, task structures, categories, and tags in the database:
 
 ```mermaid
 erDiagram
     User ||--o{ Task : "owns"
+    User ||--o{ Category : "owns"
+    User ||--o{ Tag : "owns"
+    Category ||--o{ Task : "classifies"
+    Task }o--o{ Tag : "labeled by"
+
     User {
         uuid id PK
         string email UK
@@ -37,6 +42,19 @@ erDiagram
         string status
         string priority
         timestamp due_date
+        uuid user_id FK
+        uuid category_id FK
+        timestamp created_at
+    }
+    Category {
+        uuid id PK
+        string name
+        uuid user_id FK
+        timestamp created_at
+    }
+    Tag {
+        uuid id PK
+        string name
         uuid user_id FK
         timestamp created_at
     }
@@ -69,19 +87,25 @@ graph TD
     API[TaskFlow API]
     API --> Auth[Auth Resource]
     API --> Tasks[Tasks Resource]
+    API --> Categories[Categories Resource]
     API --> Users[Users Resource]
 
-    Auth --> POST_Login[POST /api/v1/auth/login]
-    Auth --> POST_Register[POST /api/v1/auth/register]
+    Auth --> POST_Login[POST /auth/login]
+    Auth --> POST_Register[POST /auth/register]
 
-    Tasks --> GET_Tasks[GET /api/v1/tasks]
-    Tasks --> POST_Tasks[POST /api/v1/tasks]
-    Tasks --> GET_Task["GET /api/v1/tasks/{id}"]
-    Tasks --> PUT_Task["PUT /api/v1/tasks/{id}"]
-    Tasks --> DELETE_Task["DELETE /api/v1/tasks/{id}"]
+    Tasks --> GET_Tasks[GET /tasks]
+    Tasks --> POST_Tasks[POST /tasks]
+    Tasks --> GET_Task["GET /tasks/{id}"]
+    Tasks --> PUT_Task["PUT /tasks/{id}"]
+    Tasks --> DELETE_Task["DELETE /tasks/{id}"]
 
-    Users --> GET_Me[GET /api/v1/users/me]
-    Users --> PUT_Me[PUT /api/v1/users/me]
+    Categories --> GET_Categories[GET /categories]
+    Categories --> POST_Categories[POST /categories]
+    Categories --> GET_Category["GET /categories/{id}"]
+    Categories --> PUT_Category["PUT /categories/{id}"]
+    Categories --> DELETE_Category["DELETE /categories/{id}"]
+
+    Users --> GET_Me[GET /auth/me]
 ```
 
 ### Endpoints Status Reference Table
@@ -91,12 +115,31 @@ graph TD
 | **Auth** | `POST` | `/auth/register` | Register a new user | Done (Commit 2) |
 | **Auth** | `POST` | `/auth/login` | Authenticate user credentials & return JWT | Done (Commit 2) |
 | **Auth** | `GET` | `/auth/me` | Retrieve profile of the current authenticated user | Done (Commit 2) |
-| **Tasks** | `GET` | `/tasks` | Retrieve paginated tasks owned by user | Done (Commit 3) |
-| **Tasks** | `POST` | `/tasks` | Create a new task | Done (Commit 3) |
+| **Tasks** | `GET` | `/tasks` | Retrieve paginated tasks owned by user with filter & sort | Done (Commit 4) |
+| **Tasks** | `POST` | `/tasks` | Create a new task (with optional category and tags) | Done (Commit 4) |
 | **Tasks** | `GET` | `/tasks/{id}` | Retrieve details of a specific task by ID | Done (Commit 3) |
-| **Tasks** | `PUT` | `/tasks/{id}` | Update details or status of a specific task | Done (Commit 3) |
+| **Tasks** | `PUT` | `/tasks/{id}` | Update details, category, or tags of a specific task | Done (Commit 4) |
 | **Tasks** | `DELETE` | `/tasks/{id}` | Delete a specific task by ID | Done (Commit 3) |
+| **Categories** | `GET` | `/categories` | Retrieve all categories owned by user | Done (Commit 4) |
+| **Categories** | `POST` | `/categories` | Create a new category | Done (Commit 4) |
+| **Categories** | `GET` | `/categories/{id}` | Retrieve details of a specific category by ID | Done (Commit 4) |
+| **Categories** | `PUT` | `/categories/{id}` | Update a specific category's name | Done (Commit 4) |
+| **Categories** | `DELETE` | `/categories/{id}` | Delete a category (tasks' category is set to NULL) | Done (Commit 4) |
 | **Utility** | `GET` | `/health` | Verify database & server health check | Done (Commit 1) |
+
+### `GET /tasks` Query Parameters Reference Table
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :---: | :--- | :--- |
+| `status` | `string` | No | - | Filter by status: `todo`, `in_progress`, `done` |
+| `priority` | `string` | No | - | Filter by priority: `low`, `medium`, `high` |
+| `category_id` | `uuid` | No | - | Filter tasks associated with a specific category UUID |
+| `tag` | `string` | No | - | Filter tasks associated with a specific tag name |
+| `page` | `integer` | No | `1` | Pagination page number (starts at 1) |
+| `limit` | `integer` | No | `10` | Maximum number of tasks to return per page |
+| `sort` | `string` | No | `created_at` | Sort column: `due_date`, `created_at`, `priority`, `status`, `title` |
+| `order` | `string` | No | `desc` | Sort direction: `asc` (ascending) or `desc` (descending) |
+
 
 ---
 

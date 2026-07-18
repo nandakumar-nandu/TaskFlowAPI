@@ -25,14 +25,19 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 async def read_tasks(
     status: Optional[TaskStatus] = None,
     priority: Optional[TaskPriority] = None,
-    skip: int = 0,
+    category_id: Optional[uuid.UUID] = None,
+    tag: Optional[str] = None,
+    page: int = 1,
     limit: int = 10,
+    sort: str = "created_at",
+    order: str = "desc",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     🛣️ GET /tasks
-    Retrieve a paginated list of tasks matching the optional status/priority filters.
+    Retrieve a paginated, sorted list of tasks owned by the user.
+    Supports optional status, priority, category, and tag filtering.
     Protected by JWT.
     """
     return await task_service.get_tasks(
@@ -40,9 +45,14 @@ async def read_tasks(
         user_id=current_user.id,
         status=status,
         priority=priority,
-        skip=skip,
-        limit=limit
+        category_id=category_id,
+        tag=tag,
+        page=page,
+        limit=limit,
+        sort=sort,
+        order=order
     )
+
 
 
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)

@@ -13,16 +13,18 @@ from app.core.database import get_db
 
 from app.routes.auth import router as auth_router
 from app.routes.tasks import router as tasks_router
+from app.routes.categories import router as categories_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="0.1.0",
+    version="0.4.0",
     description="TaskFlow API - Simple, secure, and production-ready task management REST API."
 )
 
 # 🛣️ Include API routers
 app.include_router(auth_router)
 app.include_router(tasks_router)
+app.include_router(categories_router)
 
 
 @app.get("/health")
