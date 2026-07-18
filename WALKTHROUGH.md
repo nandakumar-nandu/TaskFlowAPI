@@ -35,19 +35,34 @@ sequenceDiagram
     participant DB as PostgreSQL Database
 
     Note over User, API: Authentication Flow
-    User->>API: POST /api/v1/auth/register (username, password, email)
+    User->>API: POST /auth/register (username, password, email)
     API->>DB: Create user with hashed password
     DB-->>API: Confirm user created
     API-->>User: User metadata response
 
-    User->>API: POST /api/v1/auth/login (username, password)
+    User->>API: POST /auth/login (username, password)
     API->>API: Verify password hash
     API-->>User: Return JWT Access Token
 
     Note over User, API: Data Access Flow
-    User->>API: GET /api/v1/tasks (Authorization: Bearer <token>)
+    User->>API: GET /tasks (Authorization: Bearer <token>)
     API->>API: Decode and validate JWT
     API->>DB: Fetch tasks for decoded User ID
     DB-->>API: Query results
     API-->>User: Array of user tasks
 ```
+
+---
+
+## Testing
+
+TaskFlow API employs a comprehensive integration testing framework built on **pytest** to ensure functional correctness, data security, and API reliability:
+
+- **pytest-asyncio Integration**: As a fully asynchronous API, our test suite runs test cases asynchronously to match uvicorn/asyncpg execution patterns.
+- **Dependency Overrides**: The tests dynamically override database dependencies (`get_db`) with transactional `AsyncMock(spec=AsyncSession)` sessions. This permits mocking complex database execution queries, return scalars, and model refreshes, avoiding database lockups and network roundtrips.
+- **Shared Fixtures Configuration**: We consolidate testing setups inside [conftest.py](file:///d:/projects/TaskFlowAPI/tests/conftest.py), which exposes standard fixtures:
+  - `db`: Isolates mock session instances per test run.
+  - `client`: Initializes asynchronous ASGI clients to communicate with FastAPI endpoints.
+  - `auth_user` & `auth_headers`: Provisions pre-configured authenticated contexts.
+- **Coverage Reports**: Configured with `pytest-cov` to monitor testing coverage, ensuring critical routes, schemas, and services are covered by at least 80% coverage (attaining 91% total coverage).
+

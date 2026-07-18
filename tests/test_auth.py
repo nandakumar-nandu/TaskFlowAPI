@@ -2,7 +2,7 @@
 """
 🧪 AUTHENTICATION INTEGRATION TESTS (test_auth.py)
 -----------------------------------------------
-Validates registration, login, and profile retrieval endpoints.
+Validates registration, login, and profile retrieval endpoints using pytest fixtures.
 """
 
 import pytest
@@ -10,214 +10,153 @@ import httpx
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.main import app
-from app.core.database import get_db
-from app.core.security import hash_password, create_access_token
+from app.core.security import hash_password
 from app.models.user import User
 
 # 🧪 Mark all tests as asynchronous
 pytestmark = pytest.mark.asyncio
 
 
-async def test_register_user_success():
+async def test_register_success(client: httpx.AsyncClient, db: AsyncMock):
     """
-    🧪 Test registration success: POST /auth/register
+    🧪 Scenario: Register a new user with a unique email address.
+    🔍 Why it matters: This verifies that the registration API endpoint properly validates inputs,
+    hashes the password securely, saves the user to the database, and returns a 201 status code.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    
-    # ⚙️ Mock database SELECT returns None (email is unique)
+    # ⚙️ Mock database SELECT returns None indicating email is not registered yet
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
-    mock_db.execute.return_value = mock_result
+    db.execute.return_value = mock_result
     
-    # ⚙️ Mock refresh side-effect to populate default UUID and timestamp
+    # ⚙️ Setup refresh side effect to populate defaults
     def mock_refresh(user):
         user.id = uuid.uuid4()
         user.created_at = datetime.now(timezone.utc)
-    mock_db.refresh.side_effect = mock_refresh
+    db.refresh.side_effect = mock_refresh
     
-    app.dependency_overrides[get_db] = lambda: mock_db
-    
-    register_payload = {
-        "email": "register_test@example.com",
-        "password": "securepassword123",
-        "full_name": "Test Registration"
+    payload = {
+        "email": "unique_register_test@example.com",
+        "password": "strongpassword123",
+        "full_name": "Unique Test User"
     }
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.post("/auth/register", json=register_payload)
-        
+    response = await client.post("/auth/register", json=payload)
+    
     assert response.status_code == 201
     json_resp = response.json()
-    assert json_resp["email"] == "register_test@example.com"
-    assert json_resp["full_name"] == "Test Registration"
+    assert json_resp["email"] == "unique_register_test@example.com"
+    assert json_resp["full_name"] == "Unique Test User"
     assert "id" in json_resp
     assert json_resp["is_active"] is True
     
-    # 🧪 Validate database insert execution calls
-    mock_db.add.assert_called_once()
-    mock_db.commit.assert_called_once()
-    
-    app.dependency_overrides.clear()
+    db.add.assert_called_once()
+    db.commit.assert_called_once()
 
 
-async def test_register_user_conflict():
+async def test_register_duplicate_email(client: httpx.AsyncClient, db: AsyncMock, auth_user: User):
     """
-    🧪 Test registration conflict when email is already registered.
+    🧪 Scenario: Register a user with an email address that is already registered in the system.
+    🔍 Why it matters: Prevents users from registering multiple accounts under the same email,
+    returning an HTTP 400 Bad Request error to signify a resource conflict.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    
-    # ⚙️ Mock database SELECT returns an existing User object
-    existing_user = User(
-        id=uuid.uuid4(),
-        email="conflict@example.com",
-        hashed_password="hashed_dummy_password",
-        created_at=datetime.now(timezone.utc),
-        is_active=True
-    )
+    # ⚙️ Mock database SELECT returns an existing user record
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = existing_user
-    mock_db.execute.return_value = mock_result
+    mock_result.scalar_one_or_none.return_value = auth_user
+    db.execute.return_value = mock_result
     
-    app.dependency_overrides[get_db] = lambda: mock_db
-    
-    register_payload = {
-        "email": "conflict@example.com",
-        "password": "securepassword123",
-        "full_name": "Conflict Registration"
+    payload = {
+        "email": auth_user.email,
+        "password": "anotherpassword123",
+        "full_name": "Duplicate Registration"
     }
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.post("/auth/register", json=register_payload)
-        
+    response = await client.post("/auth/register", json=payload)
+    
     assert response.status_code == 400
     assert response.json()["detail"] == "Email already registered"
-    
-    app.dependency_overrides.clear()
 
 
-async def test_login_success():
+async def test_login_success(client: httpx.AsyncClient, db: AsyncMock, auth_user: User):
     """
-    🧪 Test login success: POST /auth/login returns JWT access token
+    🧪 Scenario: Authenticate user login using correct credentials.
+    🔍 Why it matters: Confirms the password verification logic works and that the API issues
+    a valid JWT access token with bearer type for subsequent authenticated request routes.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
+    pwd_plain = "correctpassword123"
+    auth_user.hashed_password = hash_password(pwd_plain)
     
-    # ⚙️ Hash password and mock the returned database user
-    pwd_plain = "loginpassword123"
-    pwd_hashed = hash_password(pwd_plain)
-    user_in_db = User(
-        id=uuid.uuid4(),
-        email="login_test@example.com",
-        hashed_password=pwd_hashed,
-        created_at=datetime.now(timezone.utc),
-        is_active=True
-    )
-    
+    # ⚙️ Mock database user query returned on email search
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = user_in_db
-    mock_db.execute.return_value = mock_result
+    mock_result.scalar_one_or_none.return_value = auth_user
+    db.execute.return_value = mock_result
     
-    app.dependency_overrides[get_db] = lambda: mock_db
-    
-    login_payload = {
-        "email": "login_test@example.com",
+    payload = {
+        "email": auth_user.email,
         "password": pwd_plain
     }
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.post("/auth/login", json=login_payload)
-        
+    response = await client.post("/auth/login", json=payload)
+    
     assert response.status_code == 200
     json_resp = response.json()
     assert json_resp["token_type"] == "bearer"
     assert "access_token" in json_resp
-    
-    app.dependency_overrides.clear()
 
 
-async def test_login_invalid_credentials():
+async def test_login_wrong_password(client: httpx.AsyncClient, db: AsyncMock, auth_user: User):
     """
-    🧪 Test login rejection for invalid password credentials.
+    🧪 Scenario: Attempt login with incorrect credentials.
+    🔍 Why it matters: Verifies authorization restrictions work by rejecting invalid credentials
+    and issuing a generic HTTP 401 Unauthorized response to prevent username enumeration.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    
-    # ⚙️ Mock database user with a different hashed password
-    user_in_db = User(
-        id=uuid.uuid4(),
-        email="login_fail@example.com",
-        hashed_password=hash_password("correctpassword"),
-        created_at=datetime.now(timezone.utc),
-        is_active=True
-    )
+    auth_user.hashed_password = hash_password("correctpassword123")
     
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = user_in_db
-    mock_db.execute.return_value = mock_result
+    mock_result.scalar_one_or_none.return_value = auth_user
+    db.execute.return_value = mock_result
     
-    app.dependency_overrides[get_db] = lambda: mock_db
-    
-    login_payload = {
-        "email": "login_fail@example.com",
-        "password": "wrongpassword"
+    payload = {
+        "email": auth_user.email,
+        "password": "wrongpassword123"
     }
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.post("/auth/login", json=login_payload)
-        
+    response = await client.post("/auth/login", json=payload)
+    
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid email or password"
-    
-    app.dependency_overrides.clear()
 
 
-async def test_get_current_user_profile():
+async def test_get_current_user_authenticated(
+    client: httpx.AsyncClient,
+    db: AsyncMock,
+    auth_user: User,
+    auth_headers: dict
+):
     """
-    🧪 Test profile retrieval with valid JWT token: GET /auth/me
+    🧪 Scenario: Request user profile details using a valid JWT token.
+    🔍 Why it matters: Confirms current user context injection dependency parses valid tokens,
+    looks up user identifiers in the database, and permits secure route actions.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    
-    # ⚙️ Mock database returned user matching JWT subject ID
-    user_in_db = User(
-        id=uuid.uuid4(),
-        email="me_test@example.com",
-        full_name="Me Profile",
-        created_at=datetime.now(timezone.utc),
-        is_active=True
-    )
-    
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = user_in_db
-    mock_db.execute.return_value = mock_result
+    mock_result.scalar_one_or_none.return_value = auth_user
+    db.execute.return_value = mock_result
     
-    app.dependency_overrides[get_db] = lambda: mock_db
+    response = await client.get("/auth/me", headers=auth_headers)
     
-    # ⚙️ Generate valid JWT token for the user ID
-    token = create_access_token(data={"sub": str(user_in_db.id)})
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.get("/auth/me", headers=headers)
-        
     assert response.status_code == 200
     json_resp = response.json()
-    assert json_resp["email"] == "me_test@example.com"
-    assert json_resp["full_name"] == "Me Profile"
+    assert json_resp["email"] == auth_user.email
+    assert json_resp["full_name"] == auth_user.full_name
+
+
+async def test_get_current_user_no_token(client: httpx.AsyncClient):
+    """
+    🧪 Scenario: Attempt profile retrieval request without authorization headers.
+    🔍 Why it matters: Ensures router security dependencies block anonymous requests, returning
+    an HTTP 401 Unauthorized response automatically.
+    """
+    response = await client.get("/auth/me")
     
-    app.dependency_overrides.clear()
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"

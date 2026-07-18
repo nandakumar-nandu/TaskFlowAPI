@@ -4,14 +4,18 @@ TaskFlow API is a production-ready, high-performance, asynchronous REST API buil
 
 ## Tech Stack
 
-- **Language**: Python 3.11+
-- **Web Framework**: FastAPI (v0.111.0)
-- **ASGI Server**: Uvicorn (v0.30.1)
-- **Database Engine**: SQLAlchemy (v2.0.31) with asyncpg driver (v0.29.0)
-- **Database**: PostgreSQL (v15+)
-- **Migrations**: Alembic (v1.13.2)
-- **Settings Management**: Pydantic Settings (v2.3.4)
-- **Tests**: Pytest (v8.2.2)
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.13%2B-blue?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-v0.111.0-teal?style=for-the-badge&logo=fastapi&logoColor=white)
+![Uvicorn](https://img.shields.io/badge/Uvicorn-v0.30.1-purple?style=for-the-badge&logo=uvicorn&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-v2.0.31-red?style=for-the-badge)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-v15%2B-blue?style=for-the-badge&logo=postgresql&logoColor=white)
+![Alembic](https://img.shields.io/badge/Alembic-v1.13.2-orange?style=for-the-badge)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2.9.0-red?style=for-the-badge&logo=pydantic&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest-v9.1.1-green?style=for-the-badge&logo=pytest&logoColor=white)
+
+</div>
 
 ---
 
@@ -214,3 +218,41 @@ Ensure you have the following installed on your machine:
 - **Python**: Version 3.11 or later.
 - **PostgreSQL**: Local server or Docker container running PostgreSQL.
 - **Tools**: Command-line terminal configured with Python (e.g. bash, zsh, powershell).
+
+---
+
+## Running Tests
+
+TaskFlow API uses **pytest** and **pytest-cov** to validate application code and measure test coverage.
+
+### 🧪 Run the Test Suite
+To execute the entire integration and unit test suite, run:
+```bash
+# Windows PowerShell
+.venv\Scripts\pytest
+
+# Linux/macOS
+.venv/bin/pytest
+```
+
+### 📊 Run Tests with Coverage Report
+To run all tests and generate a coverage summary table directly in the terminal, run:
+```bash
+# Windows PowerShell
+.venv\Scripts\pytest --cov=app tests/
+
+# Linux/macOS
+.venv/bin/pytest --cov=app tests/
+```
+
+### 🏷️ Generating a Coverage Badge
+To generate a dynamic coverage badge image (`coverage.svg`), you can use the `coverage-badge` CLI:
+1. Install `coverage-badge`:
+   ```bash
+   .venv\Scripts\pip install coverage-badge
+   ```
+2. Generate the badge SVG file:
+   ```bash
+   .venv\Scripts\coverage-badge -o coverage.svg
+   ```
+This reads the latest `.coverage` file in the project root and outputs an SVG badge representing the coverage percentage (e.g., `91%`).

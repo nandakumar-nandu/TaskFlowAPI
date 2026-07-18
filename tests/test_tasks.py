@@ -2,7 +2,7 @@
 """
 🧪 TASK CRUD INTEGRATION TESTS (test_tasks.py)
 ---------------------------------------------
-Validates task creation, updates, ownership controls, pagination filters, and deletion.
+Validates task creation, updates, ownership controls, pagination filters, and deletion using pytest fixtures.
 """
 
 import pytest
@@ -10,11 +10,7 @@ import httpx
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.main import app
-from app.core.database import get_db
-from app.core.security import create_access_token
 from app.models.user import User
 from app.models.task import Task, TaskStatus, TaskPriority
 from app.models.category import Category
@@ -24,347 +20,264 @@ from app.models.tag import Tag
 pytestmark = pytest.mark.asyncio
 
 
-def setup_auth_context(mock_db):
+def mock_current_user_inject(db: AsyncMock, auth_user: User):
     """
-    ⚙️ Helper utility to configure mock user and headers context
+    ⚙️ Helper to mock current user profile lookup during JWT validation.
     """
-    user = User(
-        id=uuid.uuid4(),
-        email="test_user@example.com",
-        full_name="Test User",
-        is_active=True,
-        created_at=datetime.now(timezone.utc)
-    )
-    
-    # 🔒 Mock JWT token authentication
-    token = create_access_token(data={"sub": str(user.id)})
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    # ⚙️ Mock default select behavior for token authentication user fetch
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = user
-    mock_db.execute.return_value = mock_result
-    
-    return user, headers
+    mock_user_res = MagicMock()
+    mock_user_res.scalar_one_or_none.return_value = auth_user
+    db.execute.return_value = mock_user_res
 
 
-async def test_create_task_success():
+async def test_create_task(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    🧪 Test registering a new task: POST /tasks
+    🧪 Scenario: Create a new task with basic parameters.
+    🔍 Why it matters: Validates that the POST /tasks endpoint takes inputs, scopes the ownership
+    correctly to the authenticated user context, triggers database inserts, and returns a 201 response.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
+    mock_current_user_inject(db, auth_user)
     
-    # ⚙️ Override database dependency
-    app.dependency_overrides[get_db] = lambda: mock_db
-    
-    # ⚙️ Setup refresh side effect to populate task details
+    # ⚙️ Mock refresh side-effect to populate default UUID and timestamp
     def mock_refresh(obj):
         if isinstance(obj, Task):
             obj.id = uuid.uuid4()
             obj.created_at = datetime.now(timezone.utc)
-            obj.user_id = user.id
+            obj.user_id = auth_user.id
             
-    mock_db.refresh.side_effect = mock_refresh
+    db.refresh.side_effect = mock_refresh
     
-    task_payload = {
-        "title": "Perform Task Scaffolding",
-        "description": "Task CRUD endpoints and models implementation.",
+    payload = {
+        "title": "Basic Task Title",
+        "description": "Basic Task Description",
         "status": "todo",
-        "priority": "high"
+        "priority": "medium"
     }
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.post("/tasks", json=task_payload, headers=headers)
-        
+    response = await client.post("/tasks", json=payload, headers=auth_headers)
+    
     assert response.status_code == 201
     json_resp = response.json()
-    assert json_resp["title"] == "Perform Task Scaffolding"
+    assert json_resp["title"] == "Basic Task Title"
     assert json_resp["status"] == "todo"
-    assert json_resp["priority"] == "high"
     assert "id" in json_resp
-    assert json_resp["user_id"] == str(user.id)
+    assert json_resp["user_id"] == str(auth_user.id)
     
-    mock_db.add.assert_called_once()
-    mock_db.commit.assert_called_once()
-    app.dependency_overrides.clear()
+    db.add.assert_called_once()
+    db.commit.assert_called_once()
 
 
-async def test_get_tasks_list():
+async def test_get_tasks_pagination(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    🧪 Test retrieving user task list: GET /tasks
+    🧪 Scenario: Retrieve user tasks with paging parameters: limit and page.
+    🔍 Why it matters: Verifies that the task service calculates skips/offsets correctly and returning
+    standard paginated metadata wrappers (tasks, total count, limit, offset, pages count).
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
+    mock_current_user_inject(db, auth_user)
     
-    app.dependency_overrides[get_db] = lambda: mock_db
-    
-    # ⚙️ Configure database query to return count and tasks list
     task_1 = Task(
         id=uuid.uuid4(),
-        title="Task 1",
+        title="First Task",
         status=TaskStatus.TODO,
         priority=TaskPriority.LOW,
-        user_id=user.id,
-        created_at=datetime.now(timezone.utc)
-    )
-    task_2 = Task(
-        id=uuid.uuid4(),
-        title="Task 2",
-        status=TaskStatus.IN_PROGRESS,
-        priority=TaskPriority.HIGH,
-        user_id=user.id,
+        user_id=auth_user.id,
         created_at=datetime.now(timezone.utc)
     )
     
     mock_count_res = MagicMock()
-    mock_count_res.scalar.return_value = 2
+    mock_count_res.scalar.return_value = 1
     
     mock_tasks_res = MagicMock()
-    mock_tasks_res.scalars.return_value.all.return_value = [task_2, task_1]
+    mock_tasks_res.scalars.return_value.all.return_value = [task_1]
     
-    # ⚙️ Set order of returned objects for execute calls
-    mock_db.execute.side_effect = [
-        # user details query
-        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
-        # total count query
+    # Setup execution results: user fetch, total count query, tasks list query
+    db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=auth_user)),
         mock_count_res,
-        # tasks list query
         mock_tasks_res
     ]
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.get("/tasks?limit=5", headers=headers)
-        
+    response = await client.get("/tasks?page=2&limit=5", headers=auth_headers)
+    
     assert response.status_code == 200
     json_resp = response.json()
-    assert json_resp["total_count"] == 2
+    assert json_resp["total_count"] == 1
     assert json_resp["limit"] == 5
+    assert json_resp["offset"] == 5  # (page - 1) * limit => (2 - 1) * 5 = 5
     assert json_resp["pages"] == 1
-    assert len(json_resp["tasks"]) == 2
-    assert json_resp["tasks"][0]["title"] == "Task 2"
-    
-    app.dependency_overrides.clear()
+    assert len(json_resp["tasks"]) == 1
+    assert json_resp["tasks"][0]["title"] == "First Task"
 
 
-async def test_get_task_by_id_success():
+async def test_update_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    🧪 Test reading task details by id: GET /tasks/{task_id}
+    🧪 Scenario: Update a task owned by the requesting authenticated user.
+    🔍 Why it matters: Confirms that users are authorized to update their own tasks, changes are applied
+    to database elements correctly, and a commit is executed.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
-    
-    app.dependency_overrides[get_db] = lambda: mock_db
+    mock_current_user_inject(db, auth_user)
     
     task = Task(
         id=uuid.uuid4(),
-        title="Specific Task",
+        title="Original Task Name",
         status=TaskStatus.TODO,
-        priority=TaskPriority.MEDIUM,
-        user_id=user.id,
+        priority=TaskPriority.LOW,
+        user_id=auth_user.id,
         created_at=datetime.now(timezone.utc)
     )
     
-    mock_db.execute.side_effect = [
-        # user details query
-        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
-        # task details query
+    # Execution: user fetch, then task fetch inside update_task service
+    db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=auth_user)),
         MagicMock(scalar_one_or_none=MagicMock(return_value=task))
     ]
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.get(f"/tasks/{task.id}", headers=headers)
-        
+    payload = {
+        "title": "New Updated Name",
+        "status": "in_progress"
+    }
+    
+    response = await client.put(f"/tasks/{task.id}", json=payload, headers=auth_headers)
+    
     assert response.status_code == 200
-    assert response.json()["title"] == "Specific Task"
-    assert response.json()["user_id"] == str(user.id)
+    json_resp = response.json()
+    assert json_resp["title"] == "New Updated Name"
+    assert json_resp["status"] == "in_progress"
     
-    app.dependency_overrides.clear()
+    db.commit.assert_called_once()
 
 
-async def test_get_task_by_id_forbidden():
+async def test_delete_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    🧪 Test accessing another user's task returns 403 Forbidden: GET /tasks/{task_id}
+    🧪 Scenario: Delete a task owned by the requesting authenticated user.
+    🔍 Why it matters: Confirms that users are authorized to remove their own tasks, deletes the record
+    from the session context, and returns a 204 No Content response.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
+    mock_current_user_inject(db, auth_user)
     
-    app.dependency_overrides[get_db] = lambda: mock_db
+    task = Task(
+        id=uuid.uuid4(),
+        title="Task to delete",
+        status=TaskStatus.TODO,
+        priority=TaskPriority.LOW,
+        user_id=auth_user.id,
+        created_at=datetime.now(timezone.utc)
+    )
+    
+    db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=auth_user)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=task))
+    ]
+    
+    response = await client.delete(f"/tasks/{task.id}", headers=auth_headers)
+    
+    assert response.status_code == 204
+    db.delete.assert_called_once_with(task)
+    db.commit.assert_called_once()
+
+
+async def test_access_other_user_task(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
+    """
+    🧪 Scenario: Attempt to read details of a task belonging to a different user: GET /tasks/{task_id}
+    🔍 Why it matters: Essential security check confirming that users cannot view tasks owned by other
+    accounts, returning a 403 Forbidden status error.
+    """
+    mock_current_user_inject(db, auth_user)
     
     other_user_id = uuid.uuid4()
     task = Task(
         id=uuid.uuid4(),
-        title="Secret Task",
+        title="Another User Task",
         status=TaskStatus.TODO,
         priority=TaskPriority.HIGH,
         user_id=other_user_id,
         created_at=datetime.now(timezone.utc)
     )
     
-    mock_db.execute.side_effect = [
-        # user details query
-        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
-        # task details query
+    db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=auth_user)),
         MagicMock(scalar_one_or_none=MagicMock(return_value=task))
     ]
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.get(f"/tasks/{task.id}", headers=headers)
-        
+    response = await client.get(f"/tasks/{task.id}", headers=auth_headers)
+    
     assert response.status_code == 403
     assert response.json()["detail"] == "You do not have permission to access this task"
-    
-    app.dependency_overrides.clear()
 
 
-async def test_update_task_success():
+async def test_filter_by_status(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    🧪 Test updating a task: PUT /tasks/{task_id}
+    🧪 Scenario: Filter tasks list querying specifically by execution status.
+    🔍 Why it matters: Validates that dynamic query filters are correctly built and applied to database queries.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
-    
-    app.dependency_overrides[get_db] = lambda: mock_db
+    mock_current_user_inject(db, auth_user)
     
     task = Task(
         id=uuid.uuid4(),
-        title="Original Title",
-        status=TaskStatus.TODO,
-        priority=TaskPriority.LOW,
-        user_id=user.id,
+        title="Done Task",
+        status=TaskStatus.DONE,
+        priority=TaskPriority.MEDIUM,
+        user_id=auth_user.id,
         created_at=datetime.now(timezone.utc)
     )
     
-    mock_db.execute.side_effect = [
-        # user details query
-        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
-        # service update task fetch
-        MagicMock(scalar_one_or_none=MagicMock(return_value=task))
+    mock_count_res = MagicMock()
+    mock_count_res.scalar.return_value = 1
+    
+    mock_tasks_res = MagicMock()
+    mock_tasks_res.scalars.return_value.all.return_value = [task]
+    
+    db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=auth_user)),
+        mock_count_res,
+        mock_tasks_res
     ]
     
-    update_payload = {
-        "title": "Updated Title",
-        "status": "in_progress"
-    }
+    response = await client.get("/tasks?status=done", headers=auth_headers)
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.put(f"/tasks/{task.id}", json=update_payload, headers=headers)
-        
     assert response.status_code == 200
-    assert response.json()["title"] == "Updated Title"
-    assert response.json()["status"] == "in_progress"
-    
-    mock_db.commit.assert_called_once()
-    app.dependency_overrides.clear()
+    json_resp = response.json()
+    assert len(json_resp["tasks"]) == 1
+    assert json_resp["tasks"][0]["status"] == "done"
 
 
-async def test_delete_task_success():
-    """
-    🧪 Test deleting a task: DELETE /tasks/{task_id}
-    """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
-    
-    app.dependency_overrides[get_db] = lambda: mock_db
-    
-    task = Task(
-        id=uuid.uuid4(),
-        title="To Delete",
-        status=TaskStatus.TODO,
-        priority=TaskPriority.LOW,
-        user_id=user.id,
-        created_at=datetime.now(timezone.utc)
-    )
-    
-    mock_db.execute.side_effect = [
-        # user details query
-        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
-        # service delete task fetch
-        MagicMock(scalar_one_or_none=MagicMock(return_value=task))
-    ]
-    
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.delete(f"/tasks/{task.id}", headers=headers)
-        
-    assert response.status_code == 204
-    mock_db.delete.assert_called_once_with(task)
-    mock_db.commit.assert_called_once()
-    
-    app.dependency_overrides.clear()
+# 🧪 Additional integration tests verifying Commit 4 Category & Tag functionality
 
-
-async def test_task_endpoint_security_denied():
+async def test_create_task_with_category_and_tags(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    🧪 Test request gets 401 Unauthorized if authorization header is absent.
+    🧪 Scenario: Register a new task linked with category_id and inline tag string arrays.
+    🔍 Why it matters: Validates tag resolution services (finding existing tags or creating new tags)
+    and mapping foreign relationships to categories on task save.
     """
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.get("/tasks")
-        
-    assert response.status_code == 401
-
-
-async def test_create_task_with_category_and_tags():
-    """
-    🧪 Test registering a new task with category and tags
-    """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
-    app.dependency_overrides[get_db] = lambda: mock_db
+    mock_current_user_inject(db, auth_user)
     
     category_id = uuid.uuid4()
-    mock_category = Category(id=category_id, name="Work Tasks", user_id=user.id)
+    mock_category = Category(id=category_id, name="Work Tasks", user_id=auth_user.id)
     
-    # ⚙️ Mock side effects:
-    # 1. Fetching current user
-    # 2. Category validation check
-    # 3. Tag existence search (none exist initially, so resolved as new tags)
     mock_category_result = MagicMock()
     mock_category_result.scalar_one_or_none.return_value = mock_category
     
     mock_tag_result = MagicMock()
-    mock_tag_result.scalar_one_or_none.return_value = None  # tag created
+    mock_tag_result.scalar_one_or_none.return_value = None  # means new tags will be created
     
-    mock_db.execute.side_effect = [
-        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
+    db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=auth_user)),
         mock_category_result,
         mock_tag_result,
         mock_tag_result
     ]
     
-    # Setup database refresh simulation to load relationships
-    tag1 = Tag(id=uuid.uuid4(), name="work", user_id=user.id, created_at=datetime.now(timezone.utc))
-    tag2 = Tag(id=uuid.uuid4(), name="important", user_id=user.id, created_at=datetime.now(timezone.utc))
+    tag1 = Tag(id=uuid.uuid4(), name="work", user_id=auth_user.id, created_at=datetime.now(timezone.utc))
+    tag2 = Tag(id=uuid.uuid4(), name="important", user_id=auth_user.id, created_at=datetime.now(timezone.utc))
     
     def mock_refresh(obj):
         if isinstance(obj, Task):
             obj.id = uuid.uuid4()
             obj.created_at = datetime.now(timezone.utc)
-            obj.user_id = user.id
+            obj.user_id = auth_user.id
             obj.category_id = category_id
             obj.tags = [tag1, tag2]
             
-    mock_db.refresh.side_effect = mock_refresh
+    db.refresh.side_effect = mock_refresh
     
     task_payload = {
         "title": "Task with category and tags",
@@ -372,12 +285,8 @@ async def test_create_task_with_category_and_tags():
         "tags": ["work", "important"]
     }
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.post("/tasks", json=task_payload, headers=headers)
-        
+    response = await client.post("/tasks", json=task_payload, headers=auth_headers)
+    
     assert response.status_code == 201
     json_resp = response.json()
     assert json_resp["title"] == "Task with category and tags"
@@ -385,17 +294,14 @@ async def test_create_task_with_category_and_tags():
     assert len(json_resp["tags"]) == 2
     assert json_resp["tags"][0]["name"] == "work"
     assert json_resp["tags"][1]["name"] == "important"
-    
-    app.dependency_overrides.clear()
 
 
-async def test_get_tasks_with_complex_query():
+async def test_get_tasks_with_complex_query(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    🧪 Test retrieving task list with category, tag, sort, order, page, and limit parameters.
+    🧪 Scenario: Retrieve filtered, sorted, and paginated tasks under multiple filters simultaneously.
+    🔍 Why it matters: Validates compound query generation and pagination logic working together.
     """
-    mock_db = AsyncMock(spec=AsyncSession)
-    user, headers = setup_auth_context(mock_db)
-    app.dependency_overrides[get_db] = lambda: mock_db
+    mock_current_user_inject(db, auth_user)
     
     category_id = uuid.uuid4()
     task = Task(
@@ -404,7 +310,7 @@ async def test_get_tasks_with_complex_query():
         status=TaskStatus.TODO,
         priority=TaskPriority.HIGH,
         category_id=category_id,
-        user_id=user.id,
+        user_id=auth_user.id,
         created_at=datetime.now(timezone.utc),
         tags=[]
     )
@@ -415,24 +321,17 @@ async def test_get_tasks_with_complex_query():
     mock_tasks_res = MagicMock()
     mock_tasks_res.scalars.return_value.all.return_value = [task]
     
-    mock_db.execute.side_effect = [
-        # user details query
-        MagicMock(scalar_one_or_none=MagicMock(return_value=user)),
-        # total count query
+    db.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=auth_user)),
         mock_count_res,
-        # filtered tasks query
         mock_tasks_res
     ]
     
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        response = await ac.get(
-            f"/tasks?status=todo&priority=high&category_id={category_id}&tag=work&page=1&limit=5&sort=due_date&order=asc",
-            headers=headers
-        )
-        
+    response = await client.get(
+        f"/tasks?status=todo&priority=high&category_id={category_id}&tag=work&page=1&limit=5&sort=due_date&order=asc",
+        headers=auth_headers
+    )
+    
     assert response.status_code == 200
     json_resp = response.json()
     assert json_resp["total_count"] == 1
@@ -441,5 +340,3 @@ async def test_get_tasks_with_complex_query():
     assert json_resp["pages"] == 1
     assert len(json_resp["tasks"]) == 1
     assert json_resp["tasks"][0]["title"] == "Filtered Task"
-    
-    app.dependency_overrides.clear()

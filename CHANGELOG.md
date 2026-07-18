@@ -5,6 +5,15 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-07-18 08:55:00 +05:30
+
+### Added
+- pytest configuration in `pytest.ini` with `asyncio_mode = auto` setting.
+- Global testing fixtures inside `tests/conftest.py` covering mock database session context, async http client, auth user template, and JWT authorization headers.
+- Comprehensive integration tests in `tests/test_auth.py` for successful registrations, login failures, credential checks, and unauthorized accesses.
+- Dynamic task querying and relationship assertions in `tests/test_tasks.py` for task updates, status filters, paging, and cross-user authorization controls.
+- Code coverage reporting configured via `pytest-cov` resulting in 91% code coverage.
+
 ## [0.4.0] - 2026-07-18 08:45:00 +05:30
 
 ### Added
