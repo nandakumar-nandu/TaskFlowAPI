@@ -66,3 +66,20 @@ TaskFlow API employs a comprehensive integration testing framework built on **py
   - `auth_user` & `auth_headers`: Provisions pre-configured authenticated contexts.
 - **Coverage Reports**: Configured with `pytest-cov` to monitor testing coverage, ensuring critical routes, schemas, and services are covered by at least 80% coverage (attaining 91% total coverage).
 
+---
+
+## Containerization & Continuous Integration
+
+TaskFlow API integrates robust container configuration and automatic delivery checks:
+
+- **Dockerization**: The app is built on a custom [Dockerfile](file:///d:/projects/TaskFlowAPI/Dockerfile) leveraging a python-slim base image, multi-stage builder patterns, and clean pip upgrades.
+- **Docker Compose Setup**: Development and hosting setups are automated using [docker-compose.yml](file:///d:/projects/TaskFlowAPI/docker-compose.yml), linking API servers, Postgres DB containers, and a dev-only pgAdmin GUI.
+- **CI Pipelines (GitHub Actions)**: Every push or PR automatically runs [.github/workflows/ci.yml](file:///d:/projects/TaskFlowAPI/.github/workflows/ci.yml) validating environment installations and running the full integration test suite.
+
+## Swagger UI Documentation
+
+With updated schema models and description metadata, FastAPI serves a highly readable interactive documentation dashboard at `/docs`:
+
+![Swagger UI Screenshot Mockup](file:///C:/Users/AdminStar/.gemini/antigravity-ide/brain/55ab2e19-10e0-47bd-b816-abde5eb768ee/swagger_ui_mockup_1784345268519.png)
+
+

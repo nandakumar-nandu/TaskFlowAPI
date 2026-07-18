@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # 🐳 1. FastAPI Application Service
+  api:
+    # ⚙️ Build context points to the local Dockerfile in the project root
+    build: .
+    # ⚙️ Expose the container's port 8000 to port 8000 on the host machine
+    ports:
+      - "8000:8000"
+    # ⚙️ Bind local directories as volumes to allow code hot-reloading in dev
+    volumes:
+      - .:/app
+    # ⚙️ Define environment variables injected into the FastAPI server environment
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_secure_pwd@db:5432/taskflow_db
+      - SECRET_KEY=3ec6655c65a0b774df12a52fe9d050f2e8420be93ec6655c65a0b774df12a52f
+    # ⚙️ Delay API start until the database container reports a healthy connection status
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 🐳 2. PostgreSQL Database Service
+  db:
+    # ⚙️ Use official PostgreSQL 15 image
+    image: postgres:15
+    # ⚙️ Map database port 5432 inside container to port 5432 on host
+    ports:
+      - "5432:5432"
+    # ⚙️ Specify PostgreSQL configurations via environment options
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_secure_pwd
+      - POSTGRES_DB=taskflow_db
+    # ⚙️ Persistent database volumes to prevent data loss when container stops
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # ⚙️ Periodic checks to verify database engine is fully loaded and ready
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d taskflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 🐳 3. pgAdmin PostgreSQL GUI Service (Development Only tool)
+  pgadmin:
+    # ⚙️ Use official pgAdmin 4 image
+    image: dpage/pgadmin4
+    # ⚙️ Expose the pgAdmin GUI port 80 to port 5050 on host machine
+    ports:
+      - "5050:80"
+    # ⚙️ Default administrative credentials for logging in to pgAdmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@taskflow.local
+      - PGADMIN_DEFAULT_PASSWORD=admin_secure_pwd
+    # ⚙️ Persistent volumes to store saved pgAdmin servers configuration details
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    # ⚙️ Ensure pgAdmin starts after database is initialized
+    depends_on:
+      - db
+
+# 🗃️ Volumes declarations for storing container state details persistently on disk
+volumes:
+  postgres_data:
+  pgadmin_data:

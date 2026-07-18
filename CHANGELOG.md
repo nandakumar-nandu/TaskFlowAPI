@@ -5,6 +5,14 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-07-18 09:00:00 +05:30
+
+### Added
+- Multi-container virtualization with `Dockerfile` and `docker-compose.yml` orchestrating API (FastAPI), Database (PostgreSQL), and PGAdmin GUI admin tools.
+- Detailed plain-English execution instructions inside Dockerfile and Compose YAML attributes.
+- Continuous Integration workflow configuration in `.github/workflows/ci.yml` running pytest suites on pushes and pull requests to `main`.
+- Enhanced OpenAPI documentation schema definitions containing field validation examples and detailed endpoint descriptions for Swagger UI.
+
 ## [0.5.0] - 2026-07-18 08:55:00 +05:30
 
 ### Added

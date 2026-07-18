@@ -1,5 +1,7 @@
 # TaskFlow API
 
+[![TaskFlow API CI](https://github.com/nandakumar-nandu/TaskFlowAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/nandakumar-nandu/TaskFlowAPI/actions/workflows/ci.yml)
+
 TaskFlow API is a production-ready, high-performance, asynchronous REST API built with Python, FastAPI, and PostgreSQL. It is designed to serve as a robust task management platform with built-in JWT authentication, task filtering, sorting, pagination, and database migrations.
 
 ## Tech Stack
@@ -256,3 +258,47 @@ To generate a dynamic coverage badge image (`coverage.svg`), you can use the `co
    .venv\Scripts\coverage-badge -o coverage.svg
    ```
 This reads the latest `.coverage` file in the project root and outputs an SVG badge representing the coverage percentage (e.g., `91%`).
+
+---
+
+## Docker Setup
+
+TaskFlow API is fully containerized using **Docker** and **Docker Compose**, providing a consistent local environment for development and production deployments.
+
+### 🐳 Services Configured
+- **`api`**: The FastAPI application server (port `8000`).
+- **`db`**: A PostgreSQL 15 database instance (port `5432`).
+- **`pgadmin`**: A web-based PostgreSQL administration interface (port `5050`).
+
+### 🚀 Running the Containers
+To build the application image and launch all services in the background, run:
+```bash
+docker-compose up --build -d
+```
+
+Once execution completes:
+- **FastAPI Endpoints**: Access the API server at [http://localhost:8000](http://localhost:8000)
+- **Interactive OpenAPI Documentation**: Open [http://localhost:8000/docs](http://localhost:8000/docs)
+- **pgAdmin Console**: Login to the database administrator panel at [http://localhost:5050](http://localhost:5050) using:
+  - **Email**: `admin@taskflow.local`
+  - **Password**: `admin_secure_pwd`
+
+To stop and remove active containers and network settings, run:
+```bash
+docker-compose down
+```
+
+To stop containers and wipe persistent PostgreSQL database volumes, run:
+```bash
+docker-compose down -v
+```
+
+---
+
+## Interactive Swagger API Documentation
+
+FastAPI automatically parses endpoint routing, models schemas, and security scopes to render an interactive Swagger UI dashboard. 
+
+You can view response schemas, parameter configurations, and trigger requests directly from the browser:
+
+![Swagger UI Mockup Screenshot](docs/assets/swagger_ui_mockup.png)

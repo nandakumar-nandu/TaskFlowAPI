@@ -16,9 +16,19 @@ from app.routes.tasks import router as tasks_router
 from app.routes.categories import router as categories_router
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version="0.4.0",
-    description="TaskFlow API - Simple, secure, and production-ready task management REST API."
+    title="TaskFlow API",
+    version="0.6.0",
+    description=(
+        "TaskFlow API is a production-ready, high-performance, asynchronous REST API "
+        "built with Python, FastAPI, and PostgreSQL.\n\n"
+        "It provides robust features for user authentication, task organization, categorizations, "
+        "tag mappings, sorting, pagination, and database query optimizations."
+    ),
+    contact={
+        "name": "TaskFlow Developer Support",
+        "email": "support@taskflow.local",
+        "url": "https://github.com/nandakumar-nandu/TaskFlowAPI"
+    }
 )
 
 # 🛣️ Include API routers
