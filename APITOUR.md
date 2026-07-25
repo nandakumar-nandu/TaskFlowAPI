@@ -332,6 +332,41 @@ All endpoints below require authentication via a valid JWT bearer token.
 - **Headers**: `Authorization: Bearer <token>`
 - **Response**: `204 No Content`
 
+#### `GET /tasks/{task_id}/activity`
+- **Goal**: Fetch the append-only activity audit trail for a task (ordered newest first).
+- **Headers**: `Authorization: Bearer <token>`
+- **Query Parameters**:
+  - `limit`: Capped integer between 1 and 200 (default `50`).
+- **Response**: `200 OK`
+  ```json
+  [
+    {
+      "id": "e8c901e9-8967-43cd-ad1c-82b3cf1fg499",
+      "task_id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
+      "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+      "action": "task.updated",
+      "diff": {
+        "status": {
+          "before": "todo",
+          "after": "in_progress"
+        }
+      },
+      "occurred_at": "2026-07-25T12:00:00Z"
+    },
+    {
+      "id": "a1c901e9-8967-43cd-ad1c-82b3cf1fg411",
+      "task_id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
+      "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+      "action": "task.created",
+      "diff": null,
+      "occurred_at": "2026-07-25T11:50:00Z"
+    }
+  ]
+  ```
+- **Error Responses**:
+  - `404 Not Found`: Task not found.
+  - `403 Forbidden`: User does not own the task.
+
 ---
 
 ### 4. Category Management (Implemented)

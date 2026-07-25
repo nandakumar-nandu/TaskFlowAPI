@@ -7,7 +7,7 @@ Implements full CRUD routes for Task resources. All routes are protected by JWT 
 
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -16,7 +16,8 @@ from app.routes.auth import get_current_user
 from app.models.user import User
 from app.models.task import Task, TaskStatus, TaskPriority
 from app.schemas.task import TaskCreate, TaskUpdate, TaskRead, TaskListResponse
-from app.services import task_service
+from app.schemas.activity import ActivityRead
+from app.services import task_service, activity_service
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -155,3 +156,39 @@ async def delete_existing_task(
             detail="Task not found"
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{task_id}/activity", response_model=list[ActivityRead])
+async def read_task_activity(
+    task_id: uuid.UUID,
+    limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    🛣️ GET /tasks/{task_id}/activity
+    Retrieves the append-only activity audit trail for a task.
+    🔒 Authorization: Only the task owner can read the activity log.
+    """
+    # 🔒 Ownership check: Verify task exists and belongs to the authenticated user
+    stmt = select(Task).where(Task.id == task_id)
+    result = await db.execute(stmt)
+    task = result.scalar_one_or_none()
+    
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+        
+    if task.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this task activity"
+        )
+        
+    return await activity_service.get_activity(
+        db=db,
+        task_id=task_id,
+        limit=limit
+    )

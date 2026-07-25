@@ -62,7 +62,7 @@ async def test_create_task(client: httpx.AsyncClient, db: AsyncMock, auth_user: 
     assert "id" in json_resp
     assert json_resp["user_id"] == str(auth_user.id)
     
-    db.add.assert_called_once()
+    assert db.add.called
     db.commit.assert_called_once()
 
 

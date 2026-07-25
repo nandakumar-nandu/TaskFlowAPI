@@ -31,7 +31,9 @@ erDiagram
     User ||--o{ Category : "owns"
     User ||--o{ Tag : "owns"
     User ||--o{ Comment : "writes"
+    User ||--o{ TaskActivity : "initiates"
     Task ||--o{ Comment : "contains"
+    Task ||--o{ TaskActivity : "logs"
     Category ||--o{ Task : "classifies"
     Task }o--o{ Tag : "labeled by"
 
@@ -74,6 +76,14 @@ erDiagram
         text body
         timestamp created_at
         timestamp updated_at
+    }
+    TaskActivity {
+        uuid id PK
+        uuid task_id FK
+        uuid user_id FK
+        string action
+        json diff
+        timestamp occurred_at
     }
 ```
 
@@ -141,6 +151,7 @@ graph TD
 | **Tasks** | `GET` | `/tasks/{id}` | JWT Bearer | Path: Task UUID | `200 OK` (`TaskRead`) | Retrieves details of a specific user task |
 | **Tasks** | `PUT` | `/tasks/{id}` | JWT Bearer | `TaskUpdate` JSON body | `200 OK` (`TaskRead`) | Updates properties, category, or tags of a task |
 | **Tasks** | `DELETE` | `/tasks/{id}` | JWT Bearer | Path: Task UUID | `204 No Content` | Permanently deletes a task owned by the user |
+| **Tasks** | `GET` | `/tasks/{id}/activity` | JWT Bearer | Query `limit` (default 50) | `200 OK` (`List[ActivityRead]`) | Retrieves append-only audit trail log for a task |
 | **Categories** | `GET` | `/categories` | JWT Bearer | None | `200 OK` (`List[CategoryRead]`) | Retrieves all categories created by the user |
 | **Categories** | `POST` | `/categories` | JWT Bearer | `CategoryCreate` JSON body | `201 Created` (`CategoryRead`) | Creates a new task category |
 | **Categories** | `GET` | `/categories/{id}` | JWT Bearer | Path: Category UUID | `200 OK` (`CategoryRead`) | Retrieves details of a specific category |

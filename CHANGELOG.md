@@ -5,6 +5,17 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-25 12:00:00 +05:30
+
+### Added
+- Append-only `TaskActivity` database model in `app/models/activity.py`.
+- Alembic database migration script `022fb9df4f9b` creating `task_activity` table.
+- Pydantic response schema `ActivityRead` in `app/schemas/activity.py`.
+- Atomic transaction audit trail logging functions in `app/services/activity_service.py`.
+- Integrated atomic logging into task creation, modification, and deletion in `app/services/task_service.py`.
+- Protected activity route `GET /tasks/{task_id}/activity` in `app/routes/tasks.py`.
+- Integration tests for activity audit trail in `tests/test_activity.py`.
+
 ## [1.2.0] - 2026-07-25 11:55:00 +05:30
 
 ### Added

@@ -9,6 +9,8 @@ Supports categories verification, tags mapping, dynamic filtering, sorting, and 
 
 import uuid
 import math
+import enum
+from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -18,6 +20,7 @@ from app.models.task import Task, TaskStatus, TaskPriority
 from app.models.category import Category
 from app.models.tag import Tag
 from app.schemas.task import TaskCreate, TaskUpdate
+from app.services import activity_service
 
 
 async def get_tasks(
@@ -162,6 +165,9 @@ async def create_task(
         tags=db_tags
     )
     db.add(db_task)
+    await db.flush()
+    # 🔒 Atomic Transaction Pattern: Log task creation within the same transaction before commit
+    activity_service.log(db, db_task.id, user_id, "task.created")
     await db.commit()
     await db.refresh(db_task)
     return db_task
@@ -204,15 +210,26 @@ async def update_task(
                 detail="Category not found"
             )
 
-    # ⚙️ Apply fields changes
+    # ⚙️ Compute field diffs BEFORE applying changes to capture genuine before values
     update_data = task_in.model_dump(exclude_unset=True, exclude={"tags"})
+    diff = {}
     for key, value in update_data.items():
-        setattr(db_task, key, value)
-        
+        old_val = getattr(db_task, key)
+        if old_val != value:
+            # Format values cleanly (e.g., Enum string values, UUID/datetime strings)
+            old_str = old_val.value if isinstance(old_val, enum.Enum) else (str(old_val) if isinstance(old_val, (uuid.UUID, datetime)) else old_val)
+            new_str = value.value if isinstance(value, enum.Enum) else (str(value) if isinstance(value, (uuid.UUID, datetime)) else value)
+            diff[key] = {"before": old_str, "after": new_str}
+            setattr(db_task, key, value)
+            
     # Update tags association if provided in payload
     if task_in.tags is not None:
         db_tags = await _resolve_tags(db, user_id, task_in.tags)
         db_task.tags = db_tags
+
+    # 🔒 Atomic Transaction Pattern: Log update event with diff before commit (skip if empty diff)
+    if diff:
+        activity_service.log(db, db_task.id, user_id, "task.updated", diff=diff)
 
     await db.commit()
     await db.refresh(db_task)
@@ -243,6 +260,8 @@ async def delete_task(
             detail="You do not have permission to delete this task"
         )
         
+    # 🔒 Atomic Transaction Pattern: Log deletion event in the same transaction before deleting
+    activity_service.log(db, db_task.id, user_id, "task.deleted")
     await db.delete(db_task)
     await db.commit()
     return True
