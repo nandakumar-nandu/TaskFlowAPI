@@ -20,6 +20,8 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.routes.auth import router as auth_router
 from app.routes.tasks import router as tasks_router
 from app.routes.categories import router as categories_router
+from app.routes.users import router as users_router
+from app.middleware.upload_limit import UploadSizeLimitMiddleware
 
 # ⚙️ Configure API Rate Limiting strategy: IP-based rate limiting (using get_remote_address)
 # 🛡️ Global default limit: 100 requests per minute.
@@ -46,15 +48,17 @@ app = FastAPI(
     }
 )
 
-# ⚙️ Attach rate limiter state and error handlers to application instance
+# ⚙️ Attach rate limiter state, middleware, and error handlers to application instance
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(UploadSizeLimitMiddleware)
 
 # 🛣️ Include API routers
 app.include_router(auth_router)
 app.include_router(tasks_router)
 app.include_router(categories_router)
+app.include_router(users_router)
 
 
 @app.get("/health")

@@ -61,7 +61,13 @@ class User(Base):
         nullable=False,
         comment="Indicates if the user account is active"
     )
-
+    # 📌 URL to the user's uploaded avatar image (Optional)
+    avatar_url: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+        default=None,
+        comment="stores relative URL to uploaded avatar image"
+    )
     # 📌 Timestamp when the user registered (UTC timezone-aware)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

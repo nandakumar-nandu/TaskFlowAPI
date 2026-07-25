@@ -12,6 +12,9 @@ graph LR
         A1["POST /auth/register"]
         A2["POST /auth/login"]
         A3["GET /auth/me"]
+        U1["GET /users/me"]
+        U2["PATCH /users/me"]
+        U3["POST /users/me/avatar"]
     end
 
     subgraph Task Management (Implemented)
@@ -94,7 +97,81 @@ graph LR
   ```
 ---
 
-### 2. Task Management (Implemented)
+### 2. User Profile Endpoints
+
+All endpoints below require authentication via a valid JWT bearer token.
+
+#### `GET /users/me`
+- **Goal**: Fetch current authenticated user's profile details.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "is_active": true,
+    "avatar_url": "/media/avatars/7b0a88bf-97cc-44a3-ad6c-9411649b8032.png",
+    "created_at": "2026-07-15T17:23:00Z"
+  }
+  ```
+
+#### `PATCH /users/me`
+- **Goal**: Partially update the current user's profile fields. Only submitted fields will be modified.
+- **Headers**: `Authorization: Bearer <token>`
+- **Request Body**:
+  ```json
+  {
+    "full_name": "Johnathan Doe"
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "email": "user@example.com",
+    "full_name": "Johnathan Doe",
+    "is_active": true,
+    "avatar_url": "/media/avatars/7b0a88bf-97cc-44a3-ad6c-9411649b8032.png",
+    "created_at": "2026-07-15T17:23:00Z"
+  }
+  ```
+
+#### `POST /users/me/avatar`
+- **Goal**: Upload an image to serve as the user's avatar.
+- **Headers**: `Authorization: Bearer <token>`, `Content-Type: multipart/form-data`
+- **Payload**: Form data with key `file` containing the binary image file.
+- **Validation Rules**:
+  - Max upload size is **5 MB**. Files exceeding this size will return an `HTTP 413 Payload Too Large`.
+  - Accepted MIME types are: `image/jpeg`, `image/png`, and `image/webp`. Other types return an `HTTP 415 Unsupported Media Type`.
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "email": "user@example.com",
+    "full_name": "Johnathan Doe",
+    "is_active": true,
+    "avatar_url": "/media/avatars/7b0a88bf-97cc-44a3-ad6c-9411649b8032.png",
+    "created_at": "2026-07-15T17:23:00Z"
+  }
+  ```
+- **Error Responses**:
+  - `413 Payload Too Large`:
+    ```json
+    {
+      "detail": "Payload too large. Maximum allowed size is 5 MB."
+    }
+    ```
+  - `415 Unsupported Media Type`:
+    ```json
+    {
+      "detail": "Unsupported media type. Only image/jpeg, image/png, and image/webp are accepted."
+    }
+    ```
+
+---
+
+### 3. Task Management (Implemented)
 
 #### `GET /tasks`
 - **Goal**: Retrieve a list of tasks owned by the authenticated user with optional filtering by status/priority/category/tag, sorting, and pagination support.
@@ -250,7 +327,7 @@ graph LR
 
 ---
 
-### 3. Category Management (Implemented)
+### 4. Category Management (Implemented)
 
 #### `GET /categories`
 - **Goal**: Retrieve a list of all categories owned by the authenticated user.
@@ -325,7 +402,7 @@ graph LR
 
 ---
 
-### 4. Health Check
+### 5. Health Check
 
 #### `GET /health`
 - **Goal**: Perform immediate service connectivity diagnostics.

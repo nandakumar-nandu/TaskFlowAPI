@@ -122,6 +122,9 @@ graph TD
 | **Auth** | `POST` | `/auth/register` | None | `UserCreate` JSON body | `201 Created` (`UserRead`) | Registers a new user account |
 | **Auth** | `POST` | `/auth/login` | None | `UserLogin` JSON body | `200 OK` (`Token` JWT) | Authenticates credentials and returns a JWT |
 | **Auth** | `GET` | `/auth/me` | JWT Bearer | None | `200 OK` (`UserRead`) | Retrieves profile of the logged-in user |
+| **Users** | `GET` | `/users/me` | JWT Bearer | None | `200 OK` (`UserRead`) | Retrieves profile of the logged-in user |
+| **Users** | `PATCH` | `/users/me` | JWT Bearer | `UserUpdate` JSON body | `200 OK` (`UserRead`) | Partially updates user profile details |
+| **Users** | `POST` | `/users/me/avatar` | JWT Bearer | Multipart file (image) | `200 OK` (`UserRead`) | Uploads an avatar image (Max 5MB, JPEG/PNG/WEBP) |
 | **Tasks** | `GET` | `/tasks` | JWT Bearer | Query filters, sort, page | `200 OK` (`TaskListResponse`) | Retrieves paginated user tasks with filters & sorting |
 | **Tasks** | `POST` | `/tasks` | JWT Bearer | `TaskCreate` JSON body | `201 Created` (`TaskRead`) | Creates a new task with categories and tags |
 | **Tasks** | `GET` | `/tasks/{id}` | JWT Bearer | Path: Task UUID | `200 OK` (`TaskRead`) | Retrieves details of a specific user task |

@@ -5,6 +5,16 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-07-25 11:48:00 +05:30
+
+### Added
+- User profile management endpoints `GET /users/me` and `PATCH /users/me`.
+- Avatar image multipart/form-data upload endpoint `POST /users/me/avatar`.
+- Custom ASGI `UploadSizeLimitMiddleware` restricting requests to a maximum of 5MB.
+- SQLAlchemy database model column `avatar_url` inside `app/models/user.py`.
+- Alembic database migration script `5bfa399b5973` to update the `users` table schema.
+- Comprehensive integration tests in `tests/test_users.py`.
+
 ## [1.0.0] - 2026-07-18 09:05:00 +05:30
 
 ### Added

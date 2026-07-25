@@ -80,6 +80,11 @@ class UserUpdate(BaseModel):
         description="Account active status flag.",
         examples=[True]
     )
+    avatar_url: Optional[str] = Field(
+        None,
+        description="Optional relative URL to the uploaded avatar image.",
+        examples=["/media/avatars/7b0a88bf-97cc-44a3-ad6c-9411649b8032.png"]
+    )
 
     @field_validator("email")
     @classmethod
@@ -117,6 +122,11 @@ class UserRead(UserBase):
         ...,
         description="Timestamp when the user account was created.",
         examples=["2026-07-15T17:23:00Z"]
+    )
+    avatar_url: Optional[str] = Field(
+        None,
+        description="Relative URL to the uploaded avatar image.",
+        examples=["/media/avatars/7b0a88bf-97cc-44a3-ad6c-9411649b8032.png"]
     )
 
     # ⚙️ Enable Pydantic v2 ORM mapping compatibility
