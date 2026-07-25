@@ -33,6 +33,13 @@ graph LR
         C5["DELETE /categories/{id}"]
     end
 
+    subgraph Comments (Implemented)
+        CO1["GET /tasks/{task_id}/comments"]
+        CO2["POST /tasks/{task_id}/comments"]
+        CO3["PATCH /tasks/{task_id}/comments/{comment_id}"]
+        CO4["DELETE /tasks/{task_id}/comments/{comment_id}"]
+    end
+
     subgraph System Utility
         H1["GET /health"]
     end
@@ -402,7 +409,90 @@ All endpoints below require authentication via a valid JWT bearer token.
 
 ---
 
-### 5. Health Check
+### 5. Task Comments Endpoints
+
+All endpoints below require authentication via a valid JWT bearer token.
+
+#### `GET /tasks/{task_id}/comments`
+- **Goal**: Retrieve all comments associated with the specified task in `created_at` ascending order.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `200 OK`
+  ```json
+  [
+    {
+      "id": "1c0a88bf-97cc-44a3-ad6c-9411649b8090",
+      "task_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+      "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+      "body": "First comment on this task.",
+      "created_at": "2026-07-25T11:55:00Z",
+      "updated_at": null
+    }
+  ]
+  ```
+- **Error Codes**:
+  - `404 Not Found`: Task not found.
+  - `403 Forbidden`: Task belongs to another user.
+
+#### `POST /tasks/{task_id}/comments`
+- **Goal**: Create a new comment on the specified task.
+- **Headers**: `Authorization: Bearer <token>`
+- **Request Body**:
+  ```json
+  {
+    "body": "This is a new task comment."
+  }
+  ```
+- **Response**: `201 Created`
+  ```json
+  {
+    "id": "1c0a88bf-97cc-44a3-ad6c-9411649b8090",
+    "task_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "body": "This is a new task comment.",
+    "created_at": "2026-07-25T11:55:00Z",
+    "updated_at": null
+  }
+  ```
+- **Error Codes**:
+  - `400 Bad Request`: Body validation fails (e.g. empty comment).
+  - `404 Not Found`: Task not found.
+  - `403 Forbidden`: Task belongs to another user.
+
+#### `PATCH /tasks/{task_id}/comments/{comment_id}`
+- **Goal**: Update the body text of an existing comment.
+- **Headers**: `Authorization: Bearer <token>`
+- **Request Body**:
+  ```json
+  {
+    "body": "This is the updated comment text."
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "id": "1c0a88bf-97cc-44a3-ad6c-9411649b8090",
+    "task_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
+    "body": "This is the updated comment text.",
+    "created_at": "2026-07-25T11:55:00Z",
+    "updated_at": "2026-07-25T11:58:00Z"
+  }
+  ```
+- **Error Codes**:
+  - `404 Not Found`: Comment not found.
+  - `403 Forbidden`: Comment belongs to another user (only the author can edit it).
+
+#### `DELETE /tasks/{task_id}/comments/{comment_id}`
+- **Goal**: Delete an existing comment.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `204 No Content`
+- **Error Codes**:
+  - `404 Not Found`: Comment not found.
+  - `403 Forbidden`: Comment belongs to another user (only the author can delete it).
+
+---
+
+### 6. Health Check
 
 #### `GET /health`
 - **Goal**: Perform immediate service connectivity diagnostics.

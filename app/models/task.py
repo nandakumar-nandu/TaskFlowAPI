@@ -135,3 +135,10 @@ class Task(Base):
         lazy="selectin"
     )
 
+    # One-to-many relationship with Comment. Cascade delete orphan comment objects.
+    comments: Mapped[list["Comment"]] = relationship(
+        "Comment",
+        back_populates="task",
+        cascade="all, delete-orphan"
+    )
+

@@ -30,6 +30,8 @@ erDiagram
     User ||--o{ Task : "owns"
     User ||--o{ Category : "owns"
     User ||--o{ Tag : "owns"
+    User ||--o{ Comment : "writes"
+    Task ||--o{ Comment : "contains"
     Category ||--o{ Task : "classifies"
     Task }o--o{ Tag : "labeled by"
 
@@ -39,6 +41,7 @@ erDiagram
         string hashed_password
         string full_name
         boolean is_active
+        string avatar_url
         timestamp created_at
     }
     Task {
@@ -63,6 +66,14 @@ erDiagram
         string name
         uuid user_id FK
         timestamp created_at
+    }
+    Comment {
+        uuid id PK
+        uuid task_id FK
+        uuid user_id FK
+        text body
+        timestamp created_at
+        timestamp updated_at
     }
 ```
 
@@ -135,6 +146,10 @@ graph TD
 | **Categories** | `GET` | `/categories/{id}` | JWT Bearer | Path: Category UUID | `200 OK` (`CategoryRead`) | Retrieves details of a specific category |
 | **Categories** | `PUT` | `/categories/{id}` | JWT Bearer | `CategoryUpdate` JSON body | `200 OK` (`CategoryRead`) | Updates name of an existing user category |
 | **Categories** | `DELETE` | `/categories/{id}` | JWT Bearer | Path: Category UUID | `204 No Content` | Deletes category (associated tasks set category_id to NULL) |
+| **Comments** | `GET` | `/tasks/{task_id}/comments` | JWT Bearer | None | `200 OK` (`List[CommentRead]`) | Retrieves comments associated with a task |
+| **Comments** | `POST` | `/tasks/{task_id}/comments` | JWT Bearer | `CommentCreate` JSON body | `201 Created` (`CommentRead`) | Adds a comment to a task |
+| **Comments** | `PATCH` | `/tasks/{task_id}/comments/{comment_id}` | JWT Bearer | `CommentUpdate` JSON body | `200 OK` (`CommentRead`) | Updates comment body text (Author check) |
+| **Comments** | `DELETE` | `/tasks/{task_id}/comments/{comment_id}` | JWT Bearer | Path: task_id, comment_id | `204 No Content` | Deletes a comment (Author check) |
 | **Utility** | `GET` | `/health` | None | None | `200 OK` (Health JSON) | Performs database and server connectivity check |
 
 ### `GET /tasks` Query Parameters Reference Table

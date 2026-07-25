@@ -5,6 +5,16 @@ All notable changes to the TaskFlow API project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-25 11:55:00 +05:30
+
+### Added
+- SQLAlchemy Comment model mapping comments to parent tasks and user authors.
+- Alembic database migration script `7d5c9cfcd93c` to create the `comments` table.
+- Comment Pydantic schemas (`CommentCreate`, `CommentUpdate`, `CommentRead`).
+- Task comments business services with strict ownership and authorship checks.
+- Protected nested routes `/tasks/{task_id}/comments` mapping comment CRUD operations.
+- Four integration test cases validating comment operations in `tests/test_comments.py`.
+
 ## [1.1.0] - 2026-07-25 11:48:00 +05:30
 
 ### Added
