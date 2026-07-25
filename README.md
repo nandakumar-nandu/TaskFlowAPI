@@ -4,6 +4,7 @@
 
 TaskFlow API is a production-ready, high-performance, asynchronous REST API built with Python, FastAPI, and PostgreSQL. It is designed to serve as a robust task management platform with built-in JWT authentication, task filtering, sorting, pagination, and database migrations.
 
+
 ## Tech Stack
 
 <div align="center">
@@ -20,6 +21,17 @@ TaskFlow API is a production-ready, high-performance, asynchronous REST API buil
 </div>
 
 ---
+
+## Screens
+
+ | Tasks | Categories |
+|---|---|
+| ![Tasks](docs/assets/screenshots/Tasks.png) | ![Categories](docs/assets/screenshots/Categories.png) |
+
+| Users | Comments |
+|---|---|
+| ![Users](docs/assets/screenshots/Users.png) | ![Comments](docs/assets/screenshots/Comments.png) | 
+
 
 ## Database Schema (ER Diagram)
 
@@ -113,25 +125,37 @@ The API endpoints are structured by resource domain:
 graph TD
     API[TaskFlow API]
     API --> Auth[Auth Domain]
+    API --> Users[Users Domain]
     API --> Tasks[Tasks Domain]
     API --> Categories[Categories Domain]
+    API --> Comments[Comments Domain]
     API --> Health[Utility Health]
 
     Auth --> POST_Login[POST /auth/login]
     Auth --> POST_Register[POST /auth/register]
     Auth --> GET_Me[GET /auth/me]
 
+    Users --> GET_UserMe[GET /users/me]
+    Users --> PATCH_UserMe[PATCH /users/me]
+    Users --> POST_Avatar[POST /users/me/avatar]
+
     Tasks --> GET_Tasks[GET /tasks]
     Tasks --> POST_Tasks[POST /tasks]
     Tasks --> GET_Task["GET /tasks/{id}"]
     Tasks --> PUT_Task["PUT /tasks/{id}"]
     Tasks --> DELETE_Task["DELETE /tasks/{id}"]
+    Tasks --> GET_Activity["GET /tasks/{id}/activity"]
 
     Categories --> GET_Categories[GET /categories]
     Categories --> POST_Categories[POST /categories]
     Categories --> GET_Category["GET /categories/{id}"]
     Categories --> PUT_Category["PUT /categories/{id}"]
     Categories --> DELETE_Category["DELETE /categories/{id}"]
+
+    Comments --> GET_Comments["GET /tasks/{task_id}/comments"]
+    Comments --> POST_Comments["POST /tasks/{task_id}/comments"]
+    Comments --> PATCH_Comment["PATCH /tasks/{task_id}/comments/{id}"]
+    Comments --> DELETE_Comment["DELETE /tasks/{task_id}/comments/{id}"]
 
     Health --> GET_Health[GET /health]
 ```
@@ -263,31 +287,31 @@ TaskFlow API uses **pytest** and **pytest-cov** to validate application code and
 To execute the entire integration and unit test suite, run:
 ```bash
 # Windows PowerShell
-.venv\Scripts\pytest
+venv\Scripts\pytest
 
 # Linux/macOS
-.venv/bin/pytest
+venv/bin/pytest
 ```
 
 ### 📊 Run Tests with Coverage Report
 To run all tests and generate a coverage summary table directly in the terminal, run:
 ```bash
 # Windows PowerShell
-.venv\Scripts\pytest --cov=app tests/
+venv\Scripts\pytest --cov=app tests/
 
 # Linux/macOS
-.venv/bin/pytest --cov=app tests/
+venv/bin/pytest --cov=app tests/
 ```
 
 ### 🏷️ Generating a Coverage Badge
 To generate a dynamic coverage badge image (`coverage.svg`), you can use the `coverage-badge` CLI:
 1. Install `coverage-badge`:
    ```bash
-   .venv\Scripts\pip install coverage-badge
+   venv\Scripts\pip install coverage-badge
    ```
 2. Generate the badge SVG file:
    ```bash
-   .venv\Scripts\coverage-badge -o coverage.svg
+   venv\Scripts\coverage-badge -o coverage.svg
    ```
 This reads the latest `.coverage` file in the project root and outputs an SVG badge representing the coverage percentage (e.g., `91%`).
 
@@ -341,15 +365,10 @@ TaskFlow API is pre-configured for instant deployment on [Railway](https://railw
      - `ACCESS_TOKEN_EXPIRE_MINUTES`: Set to `30` or your preferred JWT lifetime.
 5. **Auto Deployment**: Railway will automatically detect the [Dockerfile](file:///d:/projects/TaskFlowAPI/Dockerfile) and [Procfile](file:///d:/projects/TaskFlowAPI/Procfile), build your application container, run migrations, and publish the API.
 
----
-
 ## Swagger API Documentation
 
 FastAPI automatically parses endpoint routing, models schemas, and security scopes to render an interactive Swagger UI dashboard. 
 
-- **Live Deployment Link**: [TaskFlow API Swagger UI](https://taskflowapi-production.up.railway.app/docs) (Placeholder Link)
 - **Local Development Link**: [Local API Docs](http://localhost:8000/docs)
 
-You can view response schemas, parameter configurations, and trigger requests directly from the browser:
-
-![Swagger UI Mockup Screenshot](docs/assets/swagger_ui_mockup.png)
+You can view response schemas, parameter configurations, and execute API requests interactively directly from your browser.
