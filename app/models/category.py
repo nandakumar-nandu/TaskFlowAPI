@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 💾 CATEGORY DATABASE MODEL (category.py)
-------------------------------------
-Defines the SQLAlchemy database ORM model for task categories.
+--------------------------------------------
+Defines the SQLAlchemy ORM model for the `categories` database table.
+
+Categories are user-scoped classification buckets for tasks. A user can
+create multiple categories (e.g. "Work", "Personal", "Urgent") and assign
+their tasks to them. Each category belongs to exactly one user — different
+users may have categories with the same name without conflict.
+
+Deleting a category does NOT delete its associated tasks. Instead, PostgreSQL
+sets those tasks' `category_id` column to NULL (`ondelete="SET NULL"`),
+preserving the tasks while removing the classification link.
 """
 
 import uuid
@@ -15,8 +24,16 @@ from app.core.database import Base
 
 class Category(Base):
     """
-    💾 Category Database Entity.
-    Represents a classification category for tasks, owned by a specific user.
+    💾 Category Database Entity — maps to the `categories` table.
+
+    Represents a user-owned classification label for tasks.
+
+    Relationship:
+      - tasks (one-to-many): All Task records classified under this category.
+        Uses `passive_deletes="all"` which instructs SQLAlchemy NOT to issue
+        individual UPDATE statements to set task.category_id = NULL on delete.
+        Instead, it trusts PostgreSQL's own `ondelete="SET NULL"` constraint
+        defined on the task.category_id foreign key, which is faster and atomic.
     """
     __tablename__ = "categories"
 

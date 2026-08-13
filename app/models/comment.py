@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 """
 💾 COMMENT DATABASE MODEL (comment.py)
---------------------------------------
-Defines the SQLAlchemy database ORM model for task comments.
+-----------------------------------------------
+Defines the SQLAlchemy ORM model for the `comments` database table.
+
+A Comment is a text annotation posted by a user on a specific task.
+It links two entities: the parent Task (task_id FK) and the authoring
+User (user_id FK). Both foreign keys cascade-delete — if either the
+parent task or the author user is deleted, all their comments are also
+automatically removed by the database.
+
+Edit and delete permissions are authorship-based (not task-ownership-based):
+only the user who wrote a comment (user_id == current_user.id) is allowed
+to modify or delete it, even if another user owns the parent task.
 """
 
 import uuid
@@ -15,8 +25,15 @@ from app.core.database import Base
 
 class Comment(Base):
     """
-    💾 Comment Database Entity.
-    Represents an individual comment posted by a user on a task.
+    💾 Comment Database Entity — maps to the `comments` table.
+
+    Represents a user-authored text annotation on a specific task.
+
+    Relationships:
+      - task (many-to-one): The parent task this comment belongs to.
+      - author (many-to-one): The User who wrote this comment.
+        Uses `lazy="joined"` (JOIN load strategy) so the author record is
+        fetched in the same query as the comment, avoiding a separate round-trip.
     """
     __tablename__ = "comments"
 

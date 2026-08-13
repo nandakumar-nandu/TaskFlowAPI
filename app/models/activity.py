@@ -1,8 +1,22 @@
 # -*- coding: utf-8 -*-
 """
 💾 TASK ACTIVITY DATABASE MODEL (activity.py)
----------------------------------------------
-Defines the SQLAlchemy database ORM model for task mutation audit logs.
+------------------------------------------------------
+Defines the SQLAlchemy ORM model for the `task_activity` table.
+
+This table implements an append-only audit trail for task mutations.
+Every time a task is created, updated, or deleted, one row is inserted here
+to record what happened, who did it, and (for updates) what changed.
+
+Key design decisions:
+  - APPEND-ONLY: No UPDATE or DELETE routes are ever exposed for these rows.
+    Once written, an activity record is permanent, providing a trustworthy audit log.
+  - NULLABLE user_id: The user_id FK uses SET NULL on delete. This preserves
+    audit history even after the acting user's account is deleted — the event
+    remains in the log but user_id becomes null.
+  - diff JSON: For task.updated events, the diff column stores a JSON object
+    mapping changed field names to {"before": old_value, "after": new_value} pairs.
+    For task.created and task.deleted events, diff is null (no field comparison needed).
 """
 
 import uuid
@@ -16,12 +30,18 @@ from app.core.database import Base
 
 class TaskActivity(Base):
     """
-    💾 TaskActivity Database Entity.
-    Append-only audit trail for task mutations.
-    
-    📌 Note on immutability:
-    This table is append-only. No update or delete routes are ever exposed
-    for activity rows.
+    💾 TaskActivity Database Entity — maps to the `task_activity` table.
+
+    Append-only audit trail for task lifecycle events.
+
+    Lifecycle events recorded:
+      - `task.created` : diff is null (no before/after, the task is new)
+      - `task.updated` : diff contains only the fields that changed
+      - `task.deleted` : diff is null (the task row will be cascade-deleted)
+
+    Immutability guarantee:
+      This model has NO UPDATE or DELETE service methods. The service layer
+      (activity_service.log) only adds rows — it never modifies existing ones.
     """
     __tablename__ = "task_activity"
 

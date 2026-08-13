@@ -2,7 +2,17 @@
 """
 💾 USER DATABASE MODEL (user.py)
 --------------------------------
-Defines the SQLAlchemy database ORM model for user accounts.
+Defines the SQLAlchemy ORM model for the `users` database table.
+
+The User entity is the root owner of all other resources in the system.
+Every Task, Category, Tag, and Comment has a user_id foreign key pointing
+back to this table. When a User is deleted, PostgreSQL's cascade rules
+automatically delete all their owned records (tasks, categories, tags, comments).
+
+This model intentionally does NOT declare ORM relationship fields (e.g.
+user.tasks). Ownership is instead enforced at the service layer by filtering
+all queries with `WHERE user_id = <current_user.id>`, which is cleaner and
+avoiders N+1 query risks on large datasets.
 """
 
 import uuid
@@ -15,8 +25,15 @@ from app.core.database import Base
 
 class User(Base):
     """
-    💾 User Database Entity.
-    Represents a registered user account in the system.
+    💾 User Database Entity — maps to the `users` table.
+
+    Represents a registered user account. Stores authentication credentials
+    (hashed password, not plain text), profile metadata, account status, and
+    an optional avatar image URL.
+
+    Ownership pattern: Every other table (tasks, categories, tags, comments,
+    task_activity) has a user_id FK that references this table's `id` column.
+    Cascades ensure full cleanup on account deletion.
     """
     __tablename__ = "users"
 

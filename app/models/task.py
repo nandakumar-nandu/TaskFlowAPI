@@ -2,7 +2,17 @@
 """
 💾 TASK DATABASE MODEL (task.py)
 --------------------------------
-Defines the SQLAlchemy database ORM model for tasks.
+Defines the SQLAlchemy ORM model for the `tasks` database table, plus the
+`TaskStatus` and `TaskPriority` enumerations used to constrain valid values.
+
+The Task is the central entity in TaskFlowAPI. It belongs to one User,
+optionally belongs to one Category, and can be labeled with many Tags
+(many-to-many through the `task_tags` junction table). It also accumulates
+Comments and immutable TaskActivity audit log entries over its lifecycle.
+
+Database indexes are placed on the columns most commonly used in WHERE and
+ORDER BY clauses (user_id, status, priority, category_id, due_date) to
+ensure fast query performance at scale.
 """
 
 import uuid
@@ -31,8 +41,19 @@ class TaskPriority(str, enum.Enum):
 
 class Task(Base):
     """
-    💾 Task Database Entity.
-    Represents an individual task owned by a user.
+    💾 Task Database Entity — maps to the `tasks` table.
+
+    Represents a single unit of work owned by a user. A task can optionally
+    be classified under a Category and labeled with multiple Tags.
+
+    Relationships:
+      - category (many-to-one): Optional Category that classifies this task.
+        If the Category is deleted, `category_id` is set to NULL (SET NULL).
+      - tags (many-to-many): Zero or more Tag records linked via `task_tags`.
+        Tags are eagerly loaded using the `selectin` strategy to avoid N+1
+        queries when retrieving lists of tasks.
+      - comments (one-to-many): All Comment records on this task.
+        Cascade `all, delete-orphan` means deleting the task also deletes comments.
     """
     __tablename__ = "tasks"
 
