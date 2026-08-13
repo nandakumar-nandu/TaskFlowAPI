@@ -20,11 +20,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_create_comment(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Post a new comment on a task owned by the authenticated user.
-    🔍 Why it matters: Validates that users can successfully create comments on tasks
-    they own, mapping the relationships correctly and returning a 201 status code.
-    """
+    """Post a new comment on a task owned by the authenticated user."""
     task_id = uuid.uuid4()
     task = Task(id=task_id, user_id=auth_user.id, title="Test Task")
     
@@ -62,11 +58,7 @@ async def test_create_comment(client: httpx.AsyncClient, db: AsyncMock, auth_use
 
 
 async def test_list_comments_ordered(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Retrieve a list of comments for a specific task.
-    🔍 Why it matters: Ensures that the API returns the comments belonging to the
-    requested task, sorted in ascending order of their creation timestamp.
-    """
+    """Retrieve a list of comments for a specific task."""
     task_id = uuid.uuid4()
     task = Task(id=task_id, user_id=auth_user.id, title="Test Task")
     
@@ -112,11 +104,7 @@ async def test_list_comments_ordered(client: httpx.AsyncClient, db: AsyncMock, a
 
 
 async def test_update_own_comment(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Modify the body text of an existing comment.
-    🔍 Why it matters: Confirms that the comment author can edit their comment,
-    and that the `updated_at` timestamp is properly recorded upon modification.
-    """
+    """Modify the body text of an existing comment."""
     task_id = uuid.uuid4()
     comment_id = uuid.uuid4()
     comment = Comment(
@@ -157,11 +145,7 @@ async def test_update_own_comment(client: httpx.AsyncClient, db: AsyncMock, auth
 
 
 async def test_delete_comment_forbidden(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Attempt to delete a comment authored by another user.
-    🔍 Why it matters: Enforces strict row-level security. A user cannot delete
-    another person's comment, even if they share the same task. Expects HTTP 403.
-    """
+    """Attempt to delete a comment authored by another user."""
     task_id = uuid.uuid4()
     comment_id = uuid.uuid4()
     other_user_id = uuid.uuid4()

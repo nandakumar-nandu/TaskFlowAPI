@@ -18,9 +18,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_health_check_success():
-    """
-    🧪 Test GET /health returns 200 OK when the database connects successfully.
-    """
+    """GET /health returns 200 OK when the database connects successfully."""
     # 🔌 Create a mock async session
     mock_db = AsyncMock(spec=AsyncSession)
     
@@ -47,9 +45,7 @@ async def test_health_check_success():
 
 
 async def test_health_check_database_error():
-    """
-    🧪 Test GET /health returns 503 Service Unavailable when the database is offline.
-    """
+    """GET /health returns 503 Service Unavailable when the database is offline."""
     # 🔌 Create a mock async session that throws an error when queried
     mock_db = AsyncMock(spec=AsyncSession)
     mock_db.execute.side_effect = Exception("Connection refused by host")

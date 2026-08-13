@@ -48,11 +48,7 @@ def setup_auth_context(mock_db):
 
 
 async def test_get_my_profile():
-    """
-    🧪 Scenario: Retrieve the authenticated user's own profile data.
-    🔍 Why it matters: Ensures that the `/users/me` endpoint correctly extracts
-    the user's identity from the JWT token and returns their profile without exposing others.
-    """
+    """Retrieve the authenticated user's own profile data."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -73,11 +69,7 @@ async def test_get_my_profile():
 
 
 async def test_update_full_name():
-    """
-    🧪 Scenario: Partially update the authenticated user's profile (e.g., full_name).
-    🔍 Why it matters: Validates the PATCH logic that updates only the provided fields,
-    leaving other fields (like email and password) intact and uncorrupted.
-    """
+    """Partially update the authenticated user's profile (e.g., full_name)."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -101,11 +93,7 @@ async def test_update_full_name():
 
 
 async def test_upload_avatar_valid():
-    """
-    🧪 Scenario: Upload a valid PNG avatar image.
-    🔍 Why it matters: Confirms that the multipart/form-data upload works, the file is
-    saved securely, and the `avatar_url` is updated in the database.
-    """
+    """Upload a valid PNG avatar image."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -135,11 +123,7 @@ async def test_upload_avatar_valid():
 
 
 async def test_upload_avatar_invalid_type():
-    """
-    🧪 Scenario: Attempt to upload an unsupported file format (e.g., PDF) as an avatar.
-    🔍 Why it matters: Verifies the security middleware and route logic block invalid
-    content types to prevent injection or storage abuse, returning HTTP 415.
-    """
+    """Attempt to upload an unsupported file format (e.g., PDF) as an avatar."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     

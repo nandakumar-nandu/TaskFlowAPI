@@ -19,11 +19,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_register_success(client: httpx.AsyncClient, db: AsyncMock):
-    """
-    🧪 Scenario: Register a new user with a unique email address.
-    🔍 Why it matters: This verifies that the registration API endpoint properly validates inputs,
-    hashes the password securely, saves the user to the database, and returns a 201 status code.
-    """
+    """Register a new user with a unique email address."""
     # ⚙️ Mock database SELECT returns None indicating email is not registered yet
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
@@ -55,11 +51,7 @@ async def test_register_success(client: httpx.AsyncClient, db: AsyncMock):
 
 
 async def test_register_duplicate_email(client: httpx.AsyncClient, db: AsyncMock, auth_user: User):
-    """
-    🧪 Scenario: Register a user with an email address that is already registered in the system.
-    🔍 Why it matters: Prevents users from registering multiple accounts under the same email,
-    returning an HTTP 400 Bad Request error to signify a resource conflict.
-    """
+    """Register a user with an email address that is already registered in the system."""
     # ⚙️ Mock database SELECT returns an existing user record
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = auth_user
@@ -78,11 +70,7 @@ async def test_register_duplicate_email(client: httpx.AsyncClient, db: AsyncMock
 
 
 async def test_login_success(client: httpx.AsyncClient, db: AsyncMock, auth_user: User):
-    """
-    🧪 Scenario: Authenticate user login using correct credentials.
-    🔍 Why it matters: Confirms the password verification logic works and that the API issues
-    a valid JWT access token with bearer type for subsequent authenticated request routes.
-    """
+    """Authenticate user login using correct credentials."""
     pwd_plain = "correctpassword123"
     auth_user.hashed_password = hash_password(pwd_plain)
     
@@ -105,11 +93,7 @@ async def test_login_success(client: httpx.AsyncClient, db: AsyncMock, auth_user
 
 
 async def test_login_wrong_password(client: httpx.AsyncClient, db: AsyncMock, auth_user: User):
-    """
-    🧪 Scenario: Attempt login with incorrect credentials.
-    🔍 Why it matters: Verifies authorization restrictions work by rejecting invalid credentials
-    and issuing a generic HTTP 401 Unauthorized response to prevent username enumeration.
-    """
+    """Attempt login with incorrect credentials."""
     auth_user.hashed_password = hash_password("correctpassword123")
     
     mock_result = MagicMock()
@@ -133,11 +117,7 @@ async def test_get_current_user_authenticated(
     auth_user: User,
     auth_headers: dict
 ):
-    """
-    🧪 Scenario: Request user profile details using a valid JWT token.
-    🔍 Why it matters: Confirms current user context injection dependency parses valid tokens,
-    looks up user identifiers in the database, and permits secure route actions.
-    """
+    """Request user profile details using a valid JWT token."""
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = auth_user
     db.execute.return_value = mock_result
@@ -151,11 +131,7 @@ async def test_get_current_user_authenticated(
 
 
 async def test_get_current_user_no_token(client: httpx.AsyncClient):
-    """
-    🧪 Scenario: Attempt profile retrieval request without authorization headers.
-    🔍 Why it matters: Ensures router security dependencies block anonymous requests, returning
-    an HTTP 401 Unauthorized response automatically.
-    """
+    """Attempt profile retrieval request without authorization headers."""
     response = await client.get("/auth/me")
     
     assert response.status_code == 401

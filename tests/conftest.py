@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-⚙️ PYTEST TEST FIXTURES CONFIGURATION (conftest.py)
---------------------------------------------------
-Defines shared database and API client fixtures for the FastAPI integration test suite.
+This module defines pytest fixtures for isolated testing. Key fixtures: db (mocked AsyncSession), client (in-memory HTTP client with dependency overrides), auth_headers (JWT bearer token for protected routes).
 
 Pytest Fixture Scopes Explanation:
 Fixtures are created by decorators and run depending on their configured scope:
@@ -31,6 +29,7 @@ def db() -> AsyncMock:
     """
     ⚙️ Pytest fixture to provide a mocked SQLAlchemy AsyncSession.
     Scope: function (runs for every test function individually to ensure database mock state separation).
+    We mock the database to ensure tests run in isolation without requiring a live PostgreSQL instance.
     """
     mock_db = AsyncMock(spec=AsyncSession)
     return mock_db

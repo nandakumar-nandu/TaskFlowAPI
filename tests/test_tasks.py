@@ -30,11 +30,7 @@ def mock_current_user_inject(db: AsyncMock, auth_user: User):
 
 
 async def test_create_task(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Create a new task with basic parameters.
-    🔍 Why it matters: Validates that the POST /tasks endpoint takes inputs, scopes the ownership
-    correctly to the authenticated user context, triggers database inserts, and returns a 201 response.
-    """
+    """Create a new task with basic parameters."""
     mock_current_user_inject(db, auth_user)
     
     # ⚙️ Mock refresh side-effect to populate default UUID and timestamp
@@ -67,11 +63,7 @@ async def test_create_task(client: httpx.AsyncClient, db: AsyncMock, auth_user: 
 
 
 async def test_get_tasks_pagination(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Retrieve user tasks with paging parameters: limit and page.
-    🔍 Why it matters: Verifies that the task service calculates skips/offsets correctly and returning
-    standard paginated metadata wrappers (tasks, total count, limit, offset, pages count).
-    """
+    """Retrieve user tasks with paging parameters: limit and page."""
     mock_current_user_inject(db, auth_user)
     
     task_1 = Task(
@@ -109,11 +101,7 @@ async def test_get_tasks_pagination(client: httpx.AsyncClient, db: AsyncMock, au
 
 
 async def test_update_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Update a task owned by the requesting authenticated user.
-    🔍 Why it matters: Confirms that users are authorized to update their own tasks, changes are applied
-    to database elements correctly, and a commit is executed.
-    """
+    """Update a task owned by the requesting authenticated user."""
     mock_current_user_inject(db, auth_user)
     
     task = Task(
@@ -147,11 +135,7 @@ async def test_update_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_us
 
 
 async def test_delete_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Delete a task owned by the requesting authenticated user.
-    🔍 Why it matters: Confirms that users are authorized to remove their own tasks, deletes the record
-    from the session context, and returns a 204 No Content response.
-    """
+    """Delete a task owned by the requesting authenticated user."""
     mock_current_user_inject(db, auth_user)
     
     task = Task(
@@ -176,11 +160,7 @@ async def test_delete_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_us
 
 
 async def test_access_other_user_task(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Attempt to read details of a task belonging to a different user: GET /tasks/{task_id}
-    🔍 Why it matters: Essential security check confirming that users cannot view tasks owned by other
-    accounts, returning a 403 Forbidden status error.
-    """
+    """Attempt to read details of a task belonging to a different user: GET /tasks/{task_id}."""
     mock_current_user_inject(db, auth_user)
     
     other_user_id = uuid.uuid4()
@@ -205,10 +185,7 @@ async def test_access_other_user_task(client: httpx.AsyncClient, db: AsyncMock, 
 
 
 async def test_filter_by_status(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Filter tasks list querying specifically by execution status.
-    🔍 Why it matters: Validates that dynamic query filters are correctly built and applied to database queries.
-    """
+    """Filter tasks list querying specifically by execution status."""
     mock_current_user_inject(db, auth_user)
     
     task = Task(
@@ -243,11 +220,7 @@ async def test_filter_by_status(client: httpx.AsyncClient, db: AsyncMock, auth_u
 # 🧪 Additional integration tests verifying Commit 4 Category & Tag functionality
 
 async def test_create_task_with_category_and_tags(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Register a new task linked with category_id and inline tag string arrays.
-    🔍 Why it matters: Validates tag resolution services (finding existing tags or creating new tags)
-    and mapping foreign relationships to categories on task save.
-    """
+    """Register a new task linked with category_id and inline tag string arrays."""
     mock_current_user_inject(db, auth_user)
     
     category_id = uuid.uuid4()
@@ -297,10 +270,7 @@ async def test_create_task_with_category_and_tags(client: httpx.AsyncClient, db:
 
 
 async def test_get_tasks_with_complex_query(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
-    """
-    🧪 Scenario: Retrieve filtered, sorted, and paginated tasks under multiple filters simultaneously.
-    🔍 Why it matters: Validates compound query generation and pagination logic working together.
-    """
+    """Retrieve filtered, sorted, and paginated tasks under multiple filters simultaneously."""
     mock_current_user_inject(db, auth_user)
     
     category_id = uuid.uuid4()

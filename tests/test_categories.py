@@ -47,9 +47,7 @@ def setup_auth_context(mock_db):
 
 
 async def test_create_category_success():
-    """
-    🧪 Test registering a new category: POST /categories
-    """
+    """Registering a new category: POST /categories."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -87,9 +85,7 @@ async def test_create_category_success():
 
 
 async def test_get_categories_list():
-    """
-    🧪 Test retrieving user category list: GET /categories
-    """
+    """Retrieving user category list: GET /categories."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -135,9 +131,7 @@ async def test_get_categories_list():
 
 
 async def test_get_category_by_id_success():
-    """
-    🧪 Test reading category details by id: GET /categories/{category_id}
-    """
+    """Reading category details by id: GET /categories/{category_id}."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -171,9 +165,7 @@ async def test_get_category_by_id_success():
 
 
 async def test_get_category_by_id_forbidden():
-    """
-    🧪 Test accessing another user's category returns 403 Forbidden: GET /categories/{category_id}
-    """
+    """Accessing another user's category returns 403 Forbidden: GET /categories/{category_id}."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -207,9 +199,7 @@ async def test_get_category_by_id_forbidden():
 
 
 async def test_update_category_success():
-    """
-    🧪 Test updating a category: PUT /categories/{category_id}
-    """
+    """Updating a category: PUT /categories/{category_id}."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
@@ -247,9 +237,7 @@ async def test_update_category_success():
 
 
 async def test_delete_category_success():
-    """
-    🧪 Test deleting a category: DELETE /categories/{category_id}
-    """
+    """Deleting a category: DELETE /categories/{category_id}."""
     mock_db = AsyncMock(spec=AsyncSession)
     user, headers = setup_auth_context(mock_db)
     
