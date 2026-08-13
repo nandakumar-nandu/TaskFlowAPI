@@ -19,11 +19,32 @@ from app.core.config import settings
 from app.core.database import get_db
 
 import sys
+import logging
+import json
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
+
+# ⚙️ JSON LOGGING SETUP
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_obj = {
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "time": self.formatTime(record, self.datefmt)
+        }
+        return json.dumps(log_obj)
+
+logger = logging.getLogger()
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(JSONFormatter())
+# Only add the handler if one doesn't exist to prevent duplicate logs in testing
+if not logger.handlers:
+    logger.addHandler(handler)
+logger.setLevel(settings.LOG_LEVEL)
+
 
 from app.routes.auth import router as auth_router
 from app.routes.tasks import router as tasks_router

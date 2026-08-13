@@ -74,6 +74,11 @@ class Settings(BaseSettings):
         description="Human-readable name of the API application (shown in logs and UI)"
     )
 
+    LOG_LEVEL: str = Field(
+        default="INFO",
+        description="Logging level for the application (e.g., DEBUG, INFO, WARNING, ERROR)"
+    )
+
 
 # ⚙️ Create a single shared settings instance.
 # This is imported by every module that needs configuration access (e.g. database.py, security.py).
