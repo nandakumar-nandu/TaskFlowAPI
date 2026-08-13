@@ -35,10 +35,11 @@ async def test_health_check_success():
     mock_db.execute.assert_called_once()
     
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "ok",
-        "database": "connected"
-    }
+    json_resp = response.json()
+    assert json_resp["status"] == "ok"
+    assert json_resp["database"] == "connected"
+    assert "version" in json_resp
+    assert "db_latency_ms" in json_resp
     
     # ⚙️ Reset dependency overrides
     app.dependency_overrides.clear()

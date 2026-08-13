@@ -131,12 +131,17 @@ async def health_check(response: Response, db: AsyncSession = Depends(get_db)):
     liveness without needing to maintain a login token.
     """
     try:
+        import time
+        start_time = time.time()
         # ⚙️ Run the lightest possible query — "SELECT 1" — to ping the database.
         # This verifies the async connection pool is healthy without reading any table data.
         await db.execute(text("SELECT 1"))
+        latency = round((time.time() - start_time) * 1000, 2)
         return {
             "status": "ok",
-            "database": "connected"
+            "version": app.version,
+            "database": "connected",
+            "db_latency_ms": latency
         }
     except Exception as e:
         # ❌ Any exception here means the database is unreachable (refused connection,
