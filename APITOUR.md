@@ -51,6 +51,8 @@ graph LR
 
 ### 1. Authentication Endpoints
 
+Welcome to the Authentication section! These endpoints act as the front door to our API. Before a user can do anything else, they need an account. They can create one using the Register endpoint, and then sign in using the Login endpoint to receive a "key" (a JWT token). This key must be sent with all future requests to prove who they are.
+
 #### `POST /auth/register`
 - **Goal**: Register a new user in the database.
 - **Request Body**:
@@ -105,6 +107,8 @@ graph LR
 ---
 
 ### 2. User Profile Endpoints
+
+The User Profile section handles personal account settings. Once a user is logged in, they can use these endpoints to view their own profile details, update their display name, or upload a custom avatar image. Because these actions are sensitive, the API strictly ensures that a user can only ever view or modify their own profile.
 
 All endpoints below require authentication via a valid JWT bearer token.
 
@@ -179,6 +183,8 @@ All endpoints below require authentication via a valid JWT bearer token.
 ---
 
 ### 3. Task Management (Implemented)
+
+The Task Management section is the core of our application! Here, users can create new tasks, update their progress, or delete them when they're no longer needed. The API includes robust filters so users can easily sort through hundreds of tasks to find exactly what they're looking for. It also automatically tracks any changes made to a task in a detailed activity log.
 
 #### `GET /tasks`
 - **Goal**: Retrieve a list of tasks owned by the authenticated user with optional filtering by status/priority/category/tag, sorting, and pagination support.
@@ -371,6 +377,8 @@ All endpoints below require authentication via a valid JWT bearer token.
 
 ### 4. Category Management (Implemented)
 
+To help keep things organized, the Category Management section allows users to group their tasks into custom folders or "categories" (like "Work", "Personal", or "Shopping"). Users have full control to create, rename, or delete these categories as their needs change.
+
 #### `GET /categories`
 - **Goal**: Retrieve a list of all categories owned by the authenticated user.
 - **Headers**: `Authorization: Bearer <token>`
@@ -445,6 +453,8 @@ All endpoints below require authentication via a valid JWT bearer token.
 ---
 
 ### 5. Task Comments Endpoints
+
+The Task Comments section adds a layer of collaboration and note-taking. Users can leave comments on tasks to document progress or share thoughts. For security, the API guarantees that only the original author of a comment is allowed to edit or delete it.
 
 All endpoints below require authentication via a valid JWT bearer token.
 
@@ -528,6 +538,8 @@ All endpoints below require authentication via a valid JWT bearer token.
 ---
 
 ### 6. Health Check
+
+The Health Check endpoint is a simple diagnostic tool. Systems and administrators use it to quickly verify that the API is running smoothly and that it can successfully communicate with the database. If something is broken, this endpoint will tell us!
 
 #### `GET /health`
 - **Goal**: Perform immediate service connectivity diagnostics.

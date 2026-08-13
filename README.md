@@ -2,373 +2,164 @@
 
 [![TaskFlow API CI](https://github.com/nandakumar-nandu/TaskFlowAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/nandakumar-nandu/TaskFlowAPI/actions/workflows/ci.yml)
 
-TaskFlow API is a production-ready, high-performance, asynchronous REST API built with Python, FastAPI, and PostgreSQL. It is designed to serve as a robust task management platform with built-in JWT authentication, task filtering, sorting, pagination, and database migrations.
+## Overview — What Is TaskFlowAPI?
 
-
-## Tech Stack
-
-<div align="center">
-
-![Python](https://img.shields.io/badge/Python-3.13%2B-blue?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-v0.111.0-teal?style=for-the-badge&logo=fastapi&logoColor=white)
-![Uvicorn](https://img.shields.io/badge/Uvicorn-v0.30.1-purple?style=for-the-badge&logo=uvicorn&logoColor=white)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-v2.0.31-red?style=for-the-badge)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-v15%2B-blue?style=for-the-badge&logo=postgresql&logoColor=white)
-![Alembic](https://img.shields.io/badge/Alembic-v1.13.2-orange?style=for-the-badge)
-![Pydantic](https://img.shields.io/badge/Pydantic-v2.9.0-red?style=for-the-badge&logo=pydantic&logoColor=white)
-![Pytest](https://img.shields.io/badge/Pytest-v9.1.1-green?style=for-the-badge&logo=pytest&logoColor=white)
-
-</div>
+TaskFlowAPI is a backend application that works like the brain behind a to-do list or project management app. It handles the core logic: letting users create accounts, securely log in, and manage their daily tasks. It securely stores all this data in a database and provides a standardized set of rules (the API) that a website or mobile app can follow to interact with it.
 
 ---
 
-## Screens
+## Feature List
 
- | Tasks | Categories |
-|---|---|
-| ![Tasks](docs/assets/screenshots/Tasks.png) | ![Categories](docs/assets/screenshots/Categories.png) |
+- **🔑 Secure Authentication**: Users can register and log in securely. Passwords are mathematically hashed, and login sessions are protected by JSON Web Tokens (JWT).
+- **📝 Task Management**: Create, read, update, and delete tasks with ease.
+- **📁 Categorization**: Group tasks into distinct categories (like "Work" or "Personal") to keep things organized.
+- **🏷️ Tagging System**: Assign multiple labels to a task (like "urgent" or "feature") to help with filtering.
+- **🔎 Advanced Filtering & Sorting**: Easily search through hundreds of tasks by status, priority, or category, and sort them by due date or creation time.
+- **📄 Pagination**: The API returns tasks in pages (like 10 at a time) to keep the app fast and save bandwidth.
+- **💬 Task Comments**: Collaborate with others or leave notes for yourself by commenting directly on specific tasks.
+- **📜 Activity Audit Trail**: Every time a task is created, updated, or deleted, the API secretly logs it. This creates a transparent history of who changed what and when.
+- **👤 User Profiles**: Users can update their display names and manage their accounts.
+- **🖼️ Avatar Uploads**: Users can upload profile pictures, and the API automatically limits file sizes to prevent abuse.
+- **🛡️ Rate Limiting**: The system automatically blocks users or bots that send too many requests too quickly (DDoS protection).
+- **✅ Automated Testing**: Over 90% of the codebase is covered by automated robots (tests) that run every time code is changed to make sure nothing breaks.
 
-| Users | Comments |
-|---|---|
-| ![Users](docs/assets/screenshots/Users.png) | ![Comments](docs/assets/screenshots/Comments.png) | 
+---
 
+## System Architecture
 
-## Database Schema (ER Diagram)
+TaskFlowAPI is built using a modern separation of concerns. Here is how the pieces fit together:
 
-The relationship diagram below maps out user profiles, task structures, categories, and tags in the database:
+1. **Client**: A browser or mobile app sends an HTTP request (like "get my tasks").
+2. **API (FastAPI)**: The web server receives the request, checks the user's ID card (JWT token), and asks the Service Layer to do the work.
+3. **Database (PostgreSQL)**: The Service Layer talks to the PostgreSQL database to safely retrieve or update the user's data.
+4. **pgAdmin**: An optional web dashboard for developers to manually look inside the database.
 
-```mermaid
-erDiagram
-    User ||--o{ Task : "owns"
-    User ||--o{ Category : "owns"
-    User ||--o{ Tag : "owns"
-    User ||--o{ Comment : "writes"
-    User ||--o{ TaskActivity : "initiates"
-    Task ||--o{ Comment : "contains"
-    Task ||--o{ TaskActivity : "logs"
-    Category ||--o{ Task : "classifies"
-    Task }o--o{ Tag : "labeled by"
-
-    User {
-        uuid id PK
-        string email UK
-        string hashed_password
-        string full_name
-        boolean is_active
-        string avatar_url
-        timestamp created_at
-    }
-    Task {
-        uuid id PK
-        string title
-        text description
-        string status
-        string priority
-        timestamp due_date
-        uuid user_id FK
-        uuid category_id FK
-        timestamp created_at
-    }
-    Category {
-        uuid id PK
-        string name
-        uuid user_id FK
-        timestamp created_at
-    }
-    Tag {
-        uuid id PK
-        string name
-        uuid user_id FK
-        timestamp created_at
-    }
-    Comment {
-        uuid id PK
-        uuid task_id FK
-        uuid user_id FK
-        text body
-        timestamp created_at
-        timestamp updated_at
-    }
-    TaskActivity {
-        uuid id PK
-        uuid task_id FK
-        uuid user_id FK
-        string action
-        json diff
-        timestamp occurred_at
-    }
+```text
++-------------------+        HTTP        +--------------------+
+|                   |  <-------------->  |                    |
+|  Client / Browser |                    |  FastAPI (Backend) |
+|                   |                    |                    |
++-------------------+                    +---------+----------+
+                                                   |
+                                            async database
+                                              connection
+                                                   |
++-------------------+                    +---------v----------+
+|                   |  admin dashboard   |                    |
+|      pgAdmin      |  <-------------->  | PostgreSQL (DB)    |
+|                   |                    |                    |
++-------------------+                    +--------------------+
 ```
 
 ---
 
-## Architecture Overview
+## Getting Started — Setup & Installation
 
-TaskFlow API follows a clean layer separation architecture to isolate business concerns:
+If you want to run this API on your own computer, follow these simple steps!
 
-```mermaid
-graph TD
-    Client[Client Browser / Mobile App] <--> |HTTPS Requests| FastAPI[FastAPI Application]
-    subgraph FastAPI App
-        Router[API Router] <--> Service[Service Layer]
-        Service <--> DB_Sess[SQLAlchemy AsyncSession]
-    end
-    DB_Sess <--> |asyncpg| DB[(PostgreSQL Database)]
-```
-
----
-
-## API Endpoints Structure
-
-The API endpoints are structured by resource domain:
-
-```mermaid
-graph TD
-    API[TaskFlow API]
-    API --> Auth[Auth Domain]
-    API --> Users[Users Domain]
-    API --> Tasks[Tasks Domain]
-    API --> Categories[Categories Domain]
-    API --> Comments[Comments Domain]
-    API --> Health[Utility Health]
-
-    Auth --> POST_Login[POST /auth/login]
-    Auth --> POST_Register[POST /auth/register]
-    Auth --> GET_Me[GET /auth/me]
-
-    Users --> GET_UserMe[GET /users/me]
-    Users --> PATCH_UserMe[PATCH /users/me]
-    Users --> POST_Avatar[POST /users/me/avatar]
-
-    Tasks --> GET_Tasks[GET /tasks]
-    Tasks --> POST_Tasks[POST /tasks]
-    Tasks --> GET_Task["GET /tasks/{id}"]
-    Tasks --> PUT_Task["PUT /tasks/{id}"]
-    Tasks --> DELETE_Task["DELETE /tasks/{id}"]
-    Tasks --> GET_Activity["GET /tasks/{id}/activity"]
-
-    Categories --> GET_Categories[GET /categories]
-    Categories --> POST_Categories[POST /categories]
-    Categories --> GET_Category["GET /categories/{id}"]
-    Categories --> PUT_Category["PUT /categories/{id}"]
-    Categories --> DELETE_Category["DELETE /categories/{id}"]
-
-    Comments --> GET_Comments["GET /tasks/{task_id}/comments"]
-    Comments --> POST_Comments["POST /tasks/{task_id}/comments"]
-    Comments --> PATCH_Comment["PATCH /tasks/{task_id}/comments/{id}"]
-    Comments --> DELETE_Comment["DELETE /tasks/{task_id}/comments/{id}"]
-
-    Health --> GET_Health[GET /health]
-```
-
-### API Endpoint Reference Table
-
-| Domain | HTTP Method | Path | Authentication | Request Payload / Params | Success Response | Description |
-| :--- | :---: | :--- | :---: | :--- | :---: | :--- |
-| **Auth** | `POST` | `/auth/register` | None | `UserCreate` JSON body | `201 Created` (`UserRead`) | Registers a new user account |
-| **Auth** | `POST` | `/auth/login` | None | `UserLogin` JSON body | `200 OK` (`Token` JWT) | Authenticates credentials and returns a JWT |
-| **Auth** | `GET` | `/auth/me` | JWT Bearer | None | `200 OK` (`UserRead`) | Retrieves profile of the logged-in user |
-| **Users** | `GET` | `/users/me` | JWT Bearer | None | `200 OK` (`UserRead`) | Retrieves profile of the logged-in user |
-| **Users** | `PATCH` | `/users/me` | JWT Bearer | `UserUpdate` JSON body | `200 OK` (`UserRead`) | Partially updates user profile details |
-| **Users** | `POST` | `/users/me/avatar` | JWT Bearer | Multipart file (image) | `200 OK` (`UserRead`) | Uploads an avatar image (Max 5MB, JPEG/PNG/WEBP) |
-| **Tasks** | `GET` | `/tasks` | JWT Bearer | Query filters, sort, page | `200 OK` (`TaskListResponse`) | Retrieves paginated user tasks with filters & sorting |
-| **Tasks** | `POST` | `/tasks` | JWT Bearer | `TaskCreate` JSON body | `201 Created` (`TaskRead`) | Creates a new task with categories and tags |
-| **Tasks** | `GET` | `/tasks/{id}` | JWT Bearer | Path: Task UUID | `200 OK` (`TaskRead`) | Retrieves details of a specific user task |
-| **Tasks** | `PUT` | `/tasks/{id}` | JWT Bearer | `TaskUpdate` JSON body | `200 OK` (`TaskRead`) | Updates properties, category, or tags of a task |
-| **Tasks** | `DELETE` | `/tasks/{id}` | JWT Bearer | Path: Task UUID | `204 No Content` | Permanently deletes a task owned by the user |
-| **Tasks** | `GET` | `/tasks/{id}/activity` | JWT Bearer | Query `limit` (default 50) | `200 OK` (`List[ActivityRead]`) | Retrieves append-only audit trail log for a task |
-| **Categories** | `GET` | `/categories` | JWT Bearer | None | `200 OK` (`List[CategoryRead]`) | Retrieves all categories created by the user |
-| **Categories** | `POST` | `/categories` | JWT Bearer | `CategoryCreate` JSON body | `201 Created` (`CategoryRead`) | Creates a new task category |
-| **Categories** | `GET` | `/categories/{id}` | JWT Bearer | Path: Category UUID | `200 OK` (`CategoryRead`) | Retrieves details of a specific category |
-| **Categories** | `PUT` | `/categories/{id}` | JWT Bearer | `CategoryUpdate` JSON body | `200 OK` (`CategoryRead`) | Updates name of an existing user category |
-| **Categories** | `DELETE` | `/categories/{id}` | JWT Bearer | Path: Category UUID | `204 No Content` | Deletes category (associated tasks set category_id to NULL) |
-| **Comments** | `GET` | `/tasks/{task_id}/comments` | JWT Bearer | None | `200 OK` (`List[CommentRead]`) | Retrieves comments associated with a task |
-| **Comments** | `POST` | `/tasks/{task_id}/comments` | JWT Bearer | `CommentCreate` JSON body | `201 Created` (`CommentRead`) | Adds a comment to a task |
-| **Comments** | `PATCH` | `/tasks/{task_id}/comments/{comment_id}` | JWT Bearer | `CommentUpdate` JSON body | `200 OK` (`CommentRead`) | Updates comment body text (Author check) |
-| **Comments** | `DELETE` | `/tasks/{task_id}/comments/{comment_id}` | JWT Bearer | Path: task_id, comment_id | `204 No Content` | Deletes a comment (Author check) |
-| **Utility** | `GET` | `/health` | None | None | `200 OK` (Health JSON) | Performs database and server connectivity check |
-
-### `GET /tasks` Query Parameters Reference Table
-
-| Parameter | Type | Required | Default | Description |
-| :--- | :--- | :---: | :--- | :--- |
-| `status` | `string` | No | - | Filter by status: `todo`, `in_progress`, `done` |
-| `priority` | `string` | No | - | Filter by priority: `low`, `medium`, `high` |
-| `category_id` | `uuid` | No | - | Filter tasks associated with a specific category UUID |
-| `tag` | `string` | No | - | Filter tasks associated with a specific tag name |
-| `page` | `integer` | No | `1` | Pagination page number (starts at 1) |
-| `limit` | `integer` | No | `10` | Maximum number of tasks to return per page |
-| `sort` | `string` | No | `created_at` | Sort column: `due_date`, `created_at`, `priority`, `status`, `title` |
-| `order` | `string` | No | `desc` | Sort direction: `asc` (ascending) or `desc` (descending) |
-
-
----
-
-## JWT Authentication Flow
-
-The sequence diagram below displays the end-to-end user registration and JWT token request lifecycle:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client as Client App
-    participant API as FastAPI App
-    participant DB as PostgreSQL DB
-
-    Note over Client, DB: JWT Authentication Flow
-    Client->>API: POST /auth/register (email, password, full_name)
-    API->>API: Hash password (bcrypt)
-    API->>DB: Save User to DB
-    DB-->>API: Confirm Save
-    API-->>Client: Returns User Profile (UserRead)
-
-    Client->>API: POST /auth/login (email, password)
-    API->>DB: Fetch User by Email
-    DB-->>API: User Data (hashed_password)
-    API->>API: Verify Password (bcrypt)
-    API->>API: Generate Access Token (JWT)
-    API-->>Client: Returns JWT Access Token
-
-    Client->>API: GET /auth/me (Authorization: Bearer <token>)
-    API->>API: Validate JWT Signature (pyjwt)
-    API->>DB: Query User from subject ID
-    DB-->>API: User Object
-    API-->>Client: Returns current user profile
-```
-
----
-
-## Request Lifecycle
-
-The standard flow of an incoming HTTP request through the API layer, incorporating rate limiting and validation middleware:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client
-    participant MW as Middleware (CORS / Logging / Rate Limiting)
-    participant Route as FastAPI Router (/tasks)
-    participant Auth as Auth Dependency (JWT Verify)
-    participant Service as Business Service (TaskService)
-    participant DB as SQLAlchemy (AsyncSession)
-    participant PG as PostgreSQL Database
-
-    Client->>MW: HTTP Request
-    MW->>MW: Check rate limits (slowapi)
-    Note right of MW: Aborts with 429 if client requests exceed 100/min
-    MW->>Route: Pass request
-    Route->>Auth: Authenticate Request
-    Auth-->>Route: User Context
-    Route->>Service: Call get_tasks(user_id)
-    Service->>DB: Query Tasks
-    DB->>PG: execute SELECT * FROM tasks
-    PG-->>DB: Task Rows
-    DB-->>Service: ORM Objects
-    Service-->>Route: Return Task List
-    Route-->>MW: Pydantic Response Schema
-    MW-->>Client: JSON HTTP Response
-```
-
----
-
-## Local Setup Prerequisites
-
-Ensure you have the following installed on your machine:
-- **Python**: Version 3.11 or later.
-- **PostgreSQL**: Local server or Docker container running PostgreSQL.
-- **Tools**: Command-line terminal configured with Python (e.g. bash, zsh, powershell).
-
----
-
-## Running Tests
-
-TaskFlow API uses **pytest** and **pytest-cov** to validate application code and measure test coverage.
-
-### 🧪 Run the Test Suite
-To execute the entire integration and unit test suite, run:
-```bash
-# Windows PowerShell
-venv\Scripts\pytest
-
-# Linux/macOS
-venv/bin/pytest
-```
-
-### 📊 Run Tests with Coverage Report
-To run all tests and generate a coverage summary table directly in the terminal, run:
-```bash
-# Windows PowerShell
-venv\Scripts\pytest --cov=app tests/
-
-# Linux/macOS
-venv/bin/pytest --cov=app tests/
-```
-
-### 🏷️ Generating a Coverage Badge
-To generate a dynamic coverage badge image (`coverage.svg`), you can use the `coverage-badge` CLI:
-1. Install `coverage-badge`:
+1. **Clone the Repository**
+   Download the code to your computer:
    ```bash
-   venv\Scripts\pip install coverage-badge
+   git clone https://github.com/nandakumar-nandu/TaskFlowAPI.git
+   cd TaskFlowAPI
    ```
-2. Generate the badge SVG file:
+
+2. **Configure Environment Variables**
+   The application needs some secret passwords and configurations to run. We provide a template file for you:
+   - Copy `.env.example` and rename it to `.env`.
+   - You can leave the default values inside for local testing!
+
+3. **Start Docker**
+   Make sure you have Docker installed. We use Docker to automatically download and run the database and the API without you having to install them manually.
    ```bash
-   venv\Scripts\coverage-badge -o coverage.svg
+   docker-compose up --build -d
    ```
-This reads the latest `.coverage` file in the project root and outputs an SVG badge representing the coverage percentage (e.g., `91%`).
 
-## Docker Quickstart
+4. **Run Database Migrations**
+   Now we need to tell the database to create all the empty tables (like `users` and `tasks`).
+   ```bash
+   docker-compose exec api alembic upgrade head
+   ```
 
-TaskFlow API is fully containerized using **Docker** and **Docker Compose**, providing a consistent local environment for development and production deployments.
+5. **Access the API!**
+   You are all set! Open your web browser and go to [http://localhost:8000/docs](http://localhost:8000/docs). This is a beautiful, interactive dashboard where you can click buttons to test the API directly!
 
-### 🐳 Services Configured
-- **`api`**: The FastAPI application server (port `8000`).
-- **`db`**: A PostgreSQL 15 database instance (port `5432`).
-- **`pgadmin`**: A web-based PostgreSQL administration interface (port `5050`).
+---
 
-### 🚀 Running the Containers
-To build the application image and launch all services in the background, run:
+## Navigating the Codebase
+
+Here is a map of the project to help you find your way around. We recommend reading them in the order listed below!
+
+| Directory/File | Purpose |
+| :--- | :--- |
+| `app/models/` | **Start Here:** Defines what the database tables look like (e.g., a Task has a title and a due date). |
+| `app/schemas/` | Defines the exact JSON format the API expects to receive and send back. |
+| `app/routes/` | The "doorways" of the API. This is where URLs like `/tasks` are defined. |
+| `app/services/` | The "brains" of the API. This contains the business logic (e.g., making sure a user can't delete someone else's task). |
+| `app/core/` | Foundational settings, database connections, and security/password tools. |
+| `app/main.py` | The main engine that starts the FastAPI server and plugs everything together. |
+| `alembic/` | Contains the instructions for upgrading or changing the database schema over time. |
+| `tests/` | Contains all the automated test scripts that verify the code works correctly. |
+
+---
+
+## How to Run & Test the Project
+
+### Running the App
+The easiest way to run the app is using **Docker Compose** (as shown in the Setup instructions). It starts the API, the database, and the pgAdmin dashboard all at once.
+
+If you prefer to run it manually using Python:
+1. Activate your virtual environment.
+2. Run `uvicorn app.main:app --reload`.
+
+### Running Tests
+We use a tool called `pytest` to run our automated tests. These tests create a fake database and simulate a user logging in and clicking around to make sure the app responds correctly.
+
+To run the tests and see how much of the code is covered:
 ```bash
-docker-compose up --build -d
-```
-
-Once execution completes:
-- **FastAPI Endpoints**: Access the API server at [http://localhost:8000](http://localhost:8000)
-- **Interactive OpenAPI Documentation**: Open [http://localhost:8000/docs](http://localhost:8000/docs)
-- **pgAdmin Console**: Login to the database administrator panel at [http://localhost:5050](http://localhost:5050) using:
-  - **Email**: `admin@taskflow.local`
-  - **Password**: `admin_secure_pwd`
-
-To stop and remove active containers and network settings, run:
-```bash
-docker-compose down
-```
-
-To stop containers and wipe persistent PostgreSQL database volumes, run:
-```bash
-docker-compose down -v
+pytest --cov=app tests/
 ```
 
 ---
 
-## Railway Cloud Deployment
+## Glossary for Beginners
 
-TaskFlow API is pre-configured for instant deployment on [Railway](https://railway.app).
+- **JWT (JSON Web Token)**: A secure, encrypted digital "ID card" the API gives you when you log in. You show this card with every request to prove who you are.
+- **FastAPI**: The Python framework we use to build the web server quickly and efficiently.
+- **Pydantic**: A library that strictly checks incoming data (e.g., ensuring a user's age is a number, not a word).
+- **SQLAlchemy**: A tool that lets us write Python code to talk to the database, instead of having to write raw SQL code.
+- **Alembic**: A tool that tracks changes to our database over time (like adding a new column to a table).
+- **ASGI**: The asynchronous standard that allows our Python server to handle thousands of requests at the exact same time without waiting in line.
+- **Dependency Injection**: A technique where FastAPI automatically hands our functions the tools they need (like a database connection) exactly when they need them.
+- **Docker**: A tool that packages the whole app into a virtual "box" so it runs the exact same way on your laptop as it does on a cloud server.
+- **PostgreSQL**: The robust, open-source database engine where all the data is actually saved on the hard drive.
 
-### 🚀 Step-by-Step Deployment Guide
-1. **Prepare Project**: Sign in to Railway and create a new project.
-2. **Link GitHub**: Click **Deploy from GitHub repo** and select your `TaskFlowAPI` repository.
-3. **Provision Database**:
-   - Add a **PostgreSQL** database service to your Railway workspace.
-4. **Configure Environment Variables**:
-   - Navigate to the **Variables** tab of the API service and add:
-     - `DATABASE_URL`: Set to `${{ Postgres.DATABASE_PRIVATE_URL }}` (Railway automatically maps this private connection string between the database and the API).
-     - `SECRET_KEY`: Enter a cryptographically secure random key string.
-     - `ACCESS_TOKEN_EXPIRE_MINUTES`: Set to `30` or your preferred JWT lifetime.
-5. **Auto Deployment**: Railway will automatically detect the [Dockerfile](file:///d:/projects/TaskFlowAPI/Dockerfile) and [Procfile](file:///d:/projects/TaskFlowAPI/Procfile), build your application container, run migrations, and publish the API.
+---
 
-## Swagger API Documentation
+## FAQ / Common Questions
 
-FastAPI automatically parses endpoint routing, models schemas, and security scopes to render an interactive Swagger UI dashboard. 
+**Q: Where do I change the JWT secret?**
+A: You can change the `SECRET_KEY` inside the `.env` file. Never share this secret with anyone!
 
-- **Local Development Link**: [Local API Docs](http://localhost:8000/docs)
+**Q: How do I add a new endpoint?**
+A: First, define the URL in a file inside `app/routes/`. Then, write the business logic for it inside `app/services/`. Finally, make sure the input/output formats are defined in `app/schemas/`.
 
-You can view response schemas, parameter configurations, and execute API requests interactively directly from your browser.
+**Q: How do I reset the database?**
+A: If you are using Docker, you can destroy the database and start fresh by running `docker-compose down -v` and then `docker-compose up -d`.
+
+**Q: What does the activity log do?**
+A: It secretly records every action taken on a task (like changing its status to "done"). This creates an "audit trail" so teams can see exactly who changed what, preventing disputes.
+
+**Q: Why do we use async/await?**
+A: It allows the server to keep working on other things while it waits for the database to fetch data, making the API incredibly fast.
+
+**Q: How do I view the database manually?**
+A: If you are running Docker, open your browser to `http://localhost:5050`. This is the pgAdmin dashboard. You can log in using the credentials in your `.env` file and look directly at the tables!
+
+---
+
+## For Developers vs For Non-Programmers
+
+**For Non-Programmers**: You don't need to read the code to understand what this project does! Start by reading this README, the `WALKTHROUGH.md`, and the `APITOUR.md`. You can even run the app using Docker and click around the Swagger dashboard at `http://localhost:8000/docs` to see it in action!
+
+**For Developers**: Start by exploring `app/models/` to understand the data structures, then follow the request lifecycle from `app/routes/` down to `app/services/`. We enforce a strict separation of concerns, and rely heavily on Pydantic for validation and SQLAlchemy for async database operations. Run the tests frequently!
