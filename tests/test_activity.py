@@ -48,7 +48,7 @@ async def test_create_logs_activity(client: httpx.AsyncClient, db: AsyncMock, au
             obj.created_at = datetime.now(timezone.utc)
     db.refresh.side_effect = mock_refresh
     
-    response = await client.post("/tasks", json=task_payload, headers=auth_headers)
+    response = await client.post("/api/v1/tasks", json=task_payload, headers=auth_headers)
     
     assert response.status_code == 201
     assert len(logged_activities) == 1
@@ -96,7 +96,7 @@ async def test_update_logs_diff(client: httpx.AsyncClient, db: AsyncMock, auth_u
     
     update_payload = {"status": "done"}
     
-    response = await client.put(f"/tasks/{task_id}", json=update_payload, headers=auth_headers)
+    response = await client.put(f"/api/v1/tasks/{task_id}", json=update_payload, headers=auth_headers)
     
     assert response.status_code == 200
     assert len(logged_activities) == 1
@@ -130,7 +130,7 @@ async def test_activity_forbidden_for_other_user(client: httpx.AsyncClient, db: 
         
     db.execute.side_effect = mock_execute
     
-    response = await client.get(f"/tasks/{task_id}/activity", headers=auth_headers)
+    response = await client.get(f"/api/v1/tasks/{task_id}/activity", headers=auth_headers)
     
     assert response.status_code == 403
     assert response.json()["detail"] == "You do not have permission to access this task activity"

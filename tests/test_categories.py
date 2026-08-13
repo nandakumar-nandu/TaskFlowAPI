@@ -71,7 +71,7 @@ async def test_create_category_success():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.post("/categories", json=category_payload, headers=headers)
+        response = await ac.post("/api/v1/categories", json=category_payload, headers=headers)
         
     assert response.status_code == 201
     json_resp = response.json()
@@ -119,7 +119,7 @@ async def test_get_categories_list():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.get("/categories", headers=headers)
+        response = await ac.get("/api/v1/categories", headers=headers)
         
     assert response.status_code == 200
     json_resp = response.json()
@@ -155,7 +155,7 @@ async def test_get_category_by_id_success():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.get(f"/categories/{cat.id}", headers=headers)
+        response = await ac.get(f"/api/v1/categories/{cat.id}", headers=headers)
         
     assert response.status_code == 200
     assert response.json()["name"] == "Urgent Tasks"
@@ -190,7 +190,7 @@ async def test_get_category_by_id_forbidden():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.get(f"/categories/{cat.id}", headers=headers)
+        response = await ac.get(f"/api/v1/categories/{cat.id}", headers=headers)
         
     assert response.status_code == 403
     assert response.json()["detail"] == "You do not have permission to access this category"
@@ -227,7 +227,7 @@ async def test_update_category_success():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.put(f"/categories/{cat.id}", json=update_payload, headers=headers)
+        response = await ac.put(f"/api/v1/categories/{cat.id}", json=update_payload, headers=headers)
         
     assert response.status_code == 200
     assert response.json()["name"] == "New Name"
@@ -261,7 +261,7 @@ async def test_delete_category_success():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.delete(f"/categories/{cat.id}", headers=headers)
+        response = await ac.delete(f"/api/v1/categories/{cat.id}", headers=headers)
         
     assert response.status_code == 204
     mock_db.delete.assert_called_once_with(cat)

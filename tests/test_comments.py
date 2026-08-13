@@ -47,7 +47,7 @@ async def test_create_comment(client: httpx.AsyncClient, db: AsyncMock, auth_use
     
     payload = {"body": "This is a valid task comment."}
     
-    response = await client.post(f"/tasks/{task_id}/comments", json=payload, headers=auth_headers)
+    response = await client.post(f"/api/v1/tasks/{task_id}/comments", json=payload, headers=auth_headers)
     
     assert response.status_code == 201
     json_resp = response.json()
@@ -94,7 +94,7 @@ async def test_list_comments_ordered(client: httpx.AsyncClient, db: AsyncMock, a
         
     db.execute.side_effect = mock_execute
     
-    response = await client.get(f"/tasks/{task_id}/comments", headers=auth_headers)
+    response = await client.get(f"/api/v1/tasks/{task_id}/comments", headers=auth_headers)
     
     assert response.status_code == 200
     json_resp = response.json()
@@ -135,7 +135,7 @@ async def test_update_own_comment(client: httpx.AsyncClient, db: AsyncMock, auth
     
     payload = {"body": "Updated comment body"}
     
-    response = await client.patch(f"/tasks/{task_id}/comments/{comment_id}", json=payload, headers=auth_headers)
+    response = await client.patch(f"/api/v1/tasks/{task_id}/comments/{comment_id}", json=payload, headers=auth_headers)
     
     assert response.status_code == 200
     json_resp = response.json()
@@ -171,7 +171,7 @@ async def test_delete_comment_forbidden(client: httpx.AsyncClient, db: AsyncMock
         
     db.execute.side_effect = mock_execute
     
-    response = await client.delete(f"/tasks/{task_id}/comments/{comment_id}", headers=auth_headers)
+    response = await client.delete(f"/api/v1/tasks/{task_id}/comments/{comment_id}", headers=auth_headers)
     
     assert response.status_code == 403
     db.delete.assert_not_called()

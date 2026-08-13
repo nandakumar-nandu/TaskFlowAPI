@@ -49,7 +49,7 @@ async def test_create_task(client: httpx.AsyncClient, db: AsyncMock, auth_user: 
         "priority": "medium"
     }
     
-    response = await client.post("/tasks", json=payload, headers=auth_headers)
+    response = await client.post("/api/v1/tasks", json=payload, headers=auth_headers)
     
     assert response.status_code == 201
     json_resp = response.json()
@@ -88,7 +88,7 @@ async def test_get_tasks_pagination(client: httpx.AsyncClient, db: AsyncMock, au
         mock_tasks_res
     ]
     
-    response = await client.get("/tasks?page=2&limit=5", headers=auth_headers)
+    response = await client.get("/api/v1/tasks?page=2&limit=5", headers=auth_headers)
     
     assert response.status_code == 200
     json_resp = response.json()
@@ -124,7 +124,7 @@ async def test_update_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_us
         "status": "in_progress"
     }
     
-    response = await client.put(f"/tasks/{task.id}", json=payload, headers=auth_headers)
+    response = await client.put(f"/api/v1/tasks/{task.id}", json=payload, headers=auth_headers)
     
     assert response.status_code == 200
     json_resp = response.json()
@@ -152,7 +152,7 @@ async def test_delete_task_own(client: httpx.AsyncClient, db: AsyncMock, auth_us
         MagicMock(scalar_one_or_none=MagicMock(return_value=task))
     ]
     
-    response = await client.delete(f"/tasks/{task.id}", headers=auth_headers)
+    response = await client.delete(f"/api/v1/tasks/{task.id}", headers=auth_headers)
     
     assert response.status_code == 204
     db.delete.assert_called_once_with(task)
@@ -178,7 +178,7 @@ async def test_access_other_user_task(client: httpx.AsyncClient, db: AsyncMock, 
         MagicMock(scalar_one_or_none=MagicMock(return_value=task))
     ]
     
-    response = await client.get(f"/tasks/{task.id}", headers=auth_headers)
+    response = await client.get(f"/api/v1/tasks/{task.id}", headers=auth_headers)
     
     assert response.status_code == 403
     assert response.json()["detail"] == "You do not have permission to access this task"
@@ -209,7 +209,7 @@ async def test_filter_by_status(client: httpx.AsyncClient, db: AsyncMock, auth_u
         mock_tasks_res
     ]
     
-    response = await client.get("/tasks?status=done", headers=auth_headers)
+    response = await client.get("/api/v1/tasks?status=done", headers=auth_headers)
     
     assert response.status_code == 200
     json_resp = response.json()
@@ -258,7 +258,7 @@ async def test_create_task_with_category_and_tags(client: httpx.AsyncClient, db:
         "tags": ["work", "important"]
     }
     
-    response = await client.post("/tasks", json=task_payload, headers=auth_headers)
+    response = await client.post("/api/v1/tasks", json=task_payload, headers=auth_headers)
     
     assert response.status_code == 201
     json_resp = response.json()
@@ -298,7 +298,7 @@ async def test_get_tasks_with_complex_query(client: httpx.AsyncClient, db: Async
     ]
     
     response = await client.get(
-        f"/tasks?status=todo&priority=high&category_id={category_id}&tag=work&page=1&limit=5&sort=due_date&order=asc",
+        f"/api/v1/tasks?status=todo&priority=high&category_id={category_id}&tag=work&page=1&limit=5&sort=due_date&order=asc",
         headers=auth_headers
     )
     

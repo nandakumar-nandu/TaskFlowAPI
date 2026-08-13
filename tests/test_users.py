@@ -58,7 +58,7 @@ async def test_get_my_profile():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.get("/users/me", headers=headers)
+        response = await ac.get("/api/v1/users/me", headers=headers)
         
     assert response.status_code == 200
     json_resp = response.json()
@@ -81,7 +81,7 @@ async def test_update_full_name():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.patch("/users/me", json=update_payload, headers=headers)
+        response = await ac.patch("/api/v1/users/me", json=update_payload, headers=headers)
         
     assert response.status_code == 200
     json_resp = response.json()
@@ -106,7 +106,7 @@ async def test_upload_avatar_valid():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.post("/users/me/avatar", files=files, headers=headers)
+        response = await ac.post("/api/v1/users/me/avatar", files=files, headers=headers)
         
     assert response.status_code == 200
     json_resp = response.json()
@@ -135,7 +135,7 @@ async def test_upload_avatar_invalid_type():
         transport=httpx.ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.post("/users/me/avatar", files=files, headers=headers)
+        response = await ac.post("/api/v1/users/me/avatar", files=files, headers=headers)
         
     assert response.status_code == 415
     assert response.json()["detail"] == "Unsupported media type. Only image/jpeg, image/png, and image/webp are accepted."

@@ -12,7 +12,7 @@ Key responsibilities of this file:
   4. Expose the /health endpoint for uptime monitoring.
 """
 
-from fastapi import FastAPI, Depends, Response, status
+from fastapi import FastAPI, Depends, Response, status, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.core.config import settings
@@ -91,16 +91,15 @@ app.add_middleware(UploadSizeLimitMiddleware)
 
 # 🛣️ MOUNT DOMAIN-SPECIFIC ROUTERS
 # Each router declares its own URL prefix and Swagger tag group.
-#   /auth       → Registration, login, and JWT-protected profile retrieval
-#   /tasks      → Full CRUD for tasks, activity log sub-route
-#   /categories → Full CRUD for task categories
-#   /users      → Profile management and avatar upload
-#   /tasks/{task_id}/comments → Nested comment CRUD under tasks
-app.include_router(auth_router)
-app.include_router(tasks_router)
-app.include_router(categories_router)
-app.include_router(users_router)
-app.include_router(comments_router)
+# Mounted under the global /api/v1 prefix for future-proofing.
+api_v1 = APIRouter(prefix="/api/v1")
+api_v1.include_router(auth_router)
+api_v1.include_router(tasks_router)
+api_v1.include_router(categories_router)
+api_v1.include_router(users_router)
+api_v1.include_router(comments_router)
+
+app.include_router(api_v1)
 
 
 @app.get("/health")

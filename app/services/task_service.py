@@ -99,6 +99,9 @@ async def _resolve_tags(
         tag_name_stripped = tag_name.strip()
         if not tag_name_stripped:
             continue
+        stmt = select(Tag).where(Tag.name == tag_name_stripped, Tag.user_id == user_id)
+        result = await db.execute(stmt)
+        db_tag = result.scalar_one_or_none()
         
         if not db_tag:
             db_tag = Tag(name=tag_name_stripped, user_id=user_id)

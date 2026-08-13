@@ -37,7 +37,7 @@ async def test_register_success(client: httpx.AsyncClient, db: AsyncMock):
         "full_name": "Unique Test User"
     }
     
-    response = await client.post("/auth/register", json=payload)
+    response = await client.post("/api/v1/auth/register", json=payload)
     
     assert response.status_code == 201
     json_resp = response.json()
@@ -63,7 +63,7 @@ async def test_register_duplicate_email(client: httpx.AsyncClient, db: AsyncMock
         "full_name": "Duplicate Registration"
     }
     
-    response = await client.post("/auth/register", json=payload)
+    response = await client.post("/api/v1/auth/register", json=payload)
     
     assert response.status_code == 400
     assert response.json()["detail"] == "Email already registered"
@@ -84,7 +84,7 @@ async def test_login_success(client: httpx.AsyncClient, db: AsyncMock, auth_user
         "password": pwd_plain
     }
     
-    response = await client.post("/auth/login", json=payload)
+    response = await client.post("/api/v1/auth/login", json=payload)
     
     assert response.status_code == 200
     json_resp = response.json()
@@ -105,7 +105,7 @@ async def test_login_wrong_password(client: httpx.AsyncClient, db: AsyncMock, au
         "password": "wrongpassword123"
     }
     
-    response = await client.post("/auth/login", json=payload)
+    response = await client.post("/api/v1/auth/login", json=payload)
     
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid email or password"
@@ -122,7 +122,7 @@ async def test_get_current_user_authenticated(
     mock_result.scalar_one_or_none.return_value = auth_user
     db.execute.return_value = mock_result
     
-    response = await client.get("/auth/me", headers=auth_headers)
+    response = await client.get("/api/v1/auth/me", headers=auth_headers)
     
     assert response.status_code == 200
     json_resp = response.json()
@@ -132,7 +132,7 @@ async def test_get_current_user_authenticated(
 
 async def test_get_current_user_no_token(client: httpx.AsyncClient):
     """Attempt profile retrieval request without authorization headers."""
-    response = await client.get("/auth/me")
+    response = await client.get("/api/v1/auth/me")
     
     assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
