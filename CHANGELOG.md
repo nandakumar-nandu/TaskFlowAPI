@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-07-25 12:00:00 +05:30
 
 ### Added
+- **Migration Note:** Run `alembic upgrade head` to create the task_activity table for audit logging.
 - Append-only `TaskActivity` database model in `app/models/activity.py`.
 - Alembic database migration script `022fb9df4f9b` creating `task_activity` table.
 - Pydantic response schema `ActivityRead` in `app/schemas/activity.py`.
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-07-25 11:55:00 +05:30
 
 ### Added
+- **Migration Note:** Run `alembic upgrade head` to create the comments table.
 - SQLAlchemy Comment model mapping comments to parent tasks and user authors.
 - Alembic database migration script `7d5c9cfcd93c` to create the `comments` table.
 - Comment Pydantic schemas (`CommentCreate`, `CommentUpdate`, `CommentRead`).
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2026-07-25 11:48:00 +05:30
 
 ### Added
+- **Migration Note:** Run `alembic upgrade head` to add avatar_url column to users table.
 - User profile management endpoints `GET /users/me` and `PATCH /users/me`.
 - Avatar image multipart/form-data upload endpoint `POST /users/me/avatar`.
 - Custom ASGI `UploadSizeLimitMiddleware` restricting requests to a maximum of 5MB.
@@ -64,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-07-18 08:45:00 +05:30
 
 ### Added
+- **Migration Note:** Run `alembic upgrade head` to create categories, tags, and task_tags tables.
 - Database models for `Category` (`app/models/category.py`) and `Tag` (`app/models/tag.py`) with user ownership and comments.
 - Junction table `task_tags` establishing a many-to-many relationship between tasks and tags.
 - Alembic database migration file `7ae8a893652f` to create the new tables, add `category_id` FK column to `tasks`, and provision optimized query indexes.
@@ -76,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-07-15 17:30:00 +05:30
 
 ### Added
+- **Migration Note:** Run `alembic upgrade head` to create the tasks table.
 - SQLAlchemy Task database model in `app/models/task.py` with custom enums and foreign key mappings.
 - Alembic database migration script for creating the `tasks` table.
 - Pydantic Task validation schemas in `app/schemas/task.py` (TaskCreate, TaskRead, TaskUpdate, TaskListResponse).
@@ -86,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-07-15 17:23:00 +05:30
 
 ### Added
+- **Migration Note:** Run `alembic upgrade head` to create the users table.
 - SQLAlchemy User database model in `app/models/user.py`.
 - Alembic database migration script for creating the `users` table.
 - Pydantic User validation schemas in `app/schemas/user.py` (UserCreate, UserRead, UserUpdate, Token, UserLogin).

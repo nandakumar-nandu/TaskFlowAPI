@@ -14,7 +14,7 @@ TaskFlow API provides core functionality to:
 ## Authentication Flow
 
 > [!NOTE]
-> Authentication is fully implemented in Commit 2. It utilizes JSON Web Tokens (JWT) inside HTTP Authorization headers (`Authorization: Bearer <token>`).
+> Authentication utilizes JSON Web Tokens (JWT) inside HTTP Authorization headers (`Authorization: Bearer <token>`).
 
 The authorization pipeline operates as follows:
 - **Password Encryption**: Uses the `bcrypt` library to securely hash and verify passwords during user registration and login, ensuring hashes are salted and resistant to timing and brute-force attacks.
@@ -25,8 +25,9 @@ The authorization pipeline operates as follows:
 
 ## Planned User and Data Workflow
 
-The diagram below outlines the full authentication and data-fetching flow that will be built:
+The diagrams below outline the authentication and data-fetching flows:
 
+### 1. Registration and Login
 ```mermaid
 sequenceDiagram
     autonumber
@@ -34,37 +35,88 @@ sequenceDiagram
     participant API as TaskFlow FastAPI App
     participant DB as PostgreSQL Database
 
-    Note over User, API: Authentication Flow
-    User->>API: POST /auth/register (username, password, email)
-    API->>DB: Create user with hashed password
+    Note over User, API: Registration Flow
+    User->>API: POST /auth/register (email, password, full_name)
+    API->>API: Hash password
+    API->>DB: Save user to database
     DB-->>API: Confirm user created
-    API-->>User: User metadata response
+    API-->>User: User metadata (201 Created)
 
-    User->>API: POST /auth/login (username, password)
+    Note over User, API: Login Flow
+    User->>API: POST /auth/login (email, password)
+    API->>DB: Fetch user by email
     API->>API: Verify password hash
-    API-->>User: Return JWT Access Token
+    API-->>User: Return JWT Access Token (200 OK)
+```
+
+### 2. Task Management Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Client Application
+    participant API as TaskFlow FastAPI App
+    participant DB as PostgreSQL Database
 
     Note over User, API: Data Access Flow
-    User->>API: GET /tasks (Authorization: Bearer <token>)
+    User->>API: POST /tasks (Authorization: Bearer <token>)
     API->>API: Decode and validate JWT
-    API->>DB: Fetch tasks for decoded User ID
-    DB-->>API: Query results
-    API-->>User: Array of user tasks
+    API->>DB: Create task & log activity
+    DB-->>API: Confirm creation
+    API-->>User: Task details (201 Created)
 ```
 
 ---
 
-## Testing
+## 8-Step API Walkthrough
 
-TaskFlow API employs a comprehensive integration testing framework built on **pytest** to ensure functional correctness, data security, and API reliability:
+Here is a step-by-step narrative of a typical user's journey through the API.
 
-- **pytest-asyncio Integration**: As a fully asynchronous API, our test suite runs test cases asynchronously to match uvicorn/asyncpg execution patterns.
-- **Dependency Overrides**: The tests dynamically override database dependencies (`get_db`) with transactional `AsyncMock(spec=AsyncSession)` sessions. This permits mocking complex database execution queries, return scalars, and model refreshes, avoiding database lockups and network roundtrips.
-- **Shared Fixtures Configuration**: We consolidate testing setups inside [conftest.py](file:///d:/projects/TaskFlowAPI/tests/conftest.py), which exposes standard fixtures:
-  - `db`: Isolates mock session instances per test run.
-  - `client`: Initializes asynchronous ASGI clients to communicate with FastAPI endpoints.
-  - `auth_user` & `auth_headers`: Provisions pre-configured authenticated contexts.
-- **Coverage Reports**: Configured with `pytest-cov` to monitor testing coverage, ensuring critical routes, schemas, and services are covered by at least 80% coverage (attaining 91% total coverage).
+### Step 1: Register
+- **Endpoint**: `POST /auth/register`
+- **Request Payload**: `{"email": "user@example.com", "password": "securepassword", "full_name": "Test User"}`
+- **Behind the Scenes**: The API receives the payload, hashes the password using `bcrypt`, creates a new `User` model, and commits it to the database.
+- **Expected Response**: `201 Created` with the new user's metadata (excluding the password).
+
+### Step 2: Login
+- **Endpoint**: `POST /auth/login`
+- **Request Payload**: `{"username": "user@example.com", "password": "securepassword"}`
+- **Behind the Scenes**: The API fetches the user by email, verifies the password against the stored hash, and generates a JWT (JSON Web Token) signed with a secret key.
+- **Expected Response**: `200 OK` with the `access_token` and `token_type` ("bearer").
+
+### Step 3: Create Category
+- **Endpoint**: `POST /categories`
+- **Request Payload**: `{"name": "Work Projects"}` (Requires `Authorization: Bearer <token>` header)
+- **Behind the Scenes**: The API decodes the JWT to find the user's ID. It then creates a new `Category` model linked to that user and saves it to the database.
+- **Expected Response**: `201 Created` with the new category details (including its UUID).
+
+### Step 4: Create Task with Tags
+- **Endpoint**: `POST /tasks`
+- **Request Payload**: `{"title": "Finish Report", "description": "Q3 Sales", "status": "todo", "priority": "high", "category_id": "<uuid-from-step-3>", "tags": ["urgent", "sales"]}`
+- **Behind the Scenes**: The API validates the category belongs to the user. It creates the `Task`, finds or creates the requested `Tag`s, links them in the `task_tags` junction table, and creates a `TaskActivity` log entry recording the creation.
+- **Expected Response**: `201 Created` with the task details, nested category, and array of tags.
+
+### Step 5: Fetch Task List
+- **Endpoint**: `GET /tasks?status=todo&priority=high`
+- **Request Payload**: None (Query parameters used instead)
+- **Behind the Scenes**: The API queries the database for tasks belonging to the user, applying the filters provided. It supports pagination and dynamic sorting.
+- **Expected Response**: `200 OK` with a paginated array of tasks.
+
+### Step 6: Add Comment
+- **Endpoint**: `POST /tasks/<task-uuid>/comments`
+- **Request Payload**: `{"body": "I need to ask Sarah for the Q3 numbers."}`
+- **Behind the Scenes**: The API verifies the task belongs to the user, then creates a new `Comment` linked to the task and the user.
+- **Expected Response**: `201 Created` with the comment details.
+
+### Step 7: View Activity Log
+- **Endpoint**: `GET /tasks/<task-uuid>/activity`
+- **Request Payload**: None
+- **Behind the Scenes**: The API queries the `task_activity` table for all logs related to this task, returning an append-only audit trail of who did what and when.
+- **Expected Response**: `200 OK` with an array of activity logs (e.g., showing the task was "created").
+
+### Step 8: Run Tests
+- **Command**: `pytest --cov=app tests/`
+- **Behind the Scenes**: The `pytest` framework spins up a test environment, using an in-memory SQLite database or a test PostgreSQL instance. It overrides the FastAPI `get_db` dependency to use test sessions, simulating HTTP requests via `httpx.AsyncClient`, and validates the API logic securely without affecting production data.
+- **Expected Response**: A terminal output showing all tests passing and a coverage report indicating the percentage of code tested.
 
 ---
 
@@ -72,15 +124,7 @@ TaskFlow API employs a comprehensive integration testing framework built on **py
 
 TaskFlow API integrates robust security limits, container configuration, and automatic delivery checks:
 
-- **Rate Limiting (Security)**: Integrates `slowapi` rate limiting middleware globally, enforcing an IP-based request threshold of **100 requests per minute**. Over-limit requests return standard `429 Too Many Requests` responses. The limiter is automatically bypassed during testing to prevent pipeline interference.
-- **Dockerization**: The app is built on a custom [Dockerfile](file:///d:/projects/TaskFlowAPI/Dockerfile) leveraging a python-slim base image, multi-stage builder patterns, and clean pip upgrades.
-- **Docker Compose Setup**: Development and hosting setups are automated using [docker-compose.yml](file:///d:/projects/TaskFlowAPI/docker-compose.yml), linking API servers, Postgres DB containers, and a dev-only pgAdmin GUI.
-- **CI Pipelines (GitHub Actions)**: Every push or PR automatically runs [.github/workflows/ci.yml](file:///d:/projects/TaskFlowAPI/.github/workflows/ci.yml) validating environment installations and running the full integration test suite.
-
-## Swagger UI Documentation
-
-With updated schema models and description metadata, FastAPI serves a highly readable interactive documentation dashboard at `/docs`:
-
-![Swagger UI Screenshot Mockup](file:///C:/Users/AdminStar/.gemini/antigravity-ide/brain/55ab2e19-10e0-47bd-b816-abde5eb768ee/swagger_ui_mockup_1784345268519.png)
-
-
+- **Rate Limiting (Security)**: Integrates `slowapi` rate limiting middleware globally, enforcing an IP-based request threshold of **100 requests per minute**. Over-limit requests return standard `429 Too Many Requests` responses.
+- **Dockerization**: The app is built on a custom `Dockerfile` leveraging a python-slim base image, multi-stage builder patterns, and clean pip upgrades.
+- **Docker Compose Setup**: Development and hosting setups are automated using `docker-compose.yml`, linking API servers, Postgres DB containers, and a dev-only pgAdmin GUI.
+- **CI Pipelines (GitHub Actions)**: Every push or PR automatically runs `.github/workflows/ci.yml` validating environment installations and running the full integration test suite.
