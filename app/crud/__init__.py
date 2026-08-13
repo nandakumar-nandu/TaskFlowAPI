@@ -6,5 +6,8 @@ Benefits:
 - Simplifies unit testing (mock crud.* instead of db.query).
 - Centralizes common query patterns (e.g., soft deletes, pagination).
 
-This layer exists to isolate database queries from business logic. Services should call crud.user.get() instead of db.query(User).filter().
 """
+from .user import user
+from .task import task
+
+__all__ = ["user", "task"]
