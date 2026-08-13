@@ -47,6 +47,35 @@ graph LR
 
 ---
 
+## Quick Reference
+
+| Endpoint | Method | Purpose | See Also |
+| :--- | :---: | :--- | :--- |
+| `/auth/register` | `POST` | Register a new user | [README Tutorial, Step 1](README.md#step-1-register) |
+| `/auth/login` | `POST` | Login and get JWT | [README Tutorial, Step 2](README.md#step-2-login) |
+| `/auth/me` | `GET` | Get own profile (auth) | |
+| `/users/me` | `GET` | Get own profile (users) | |
+| `/users/me` | `PATCH` | Update own profile | |
+| `/users/me/avatar` | `POST` | Upload avatar | |
+| `/tasks` | `GET` | Get tasks | [README Tutorial, Step 5](README.md#step-5-fetch-task-list) |
+| `/tasks` | `POST` | Create a task | [README Tutorial, Step 4](README.md#step-4-create-task-with-tags) |
+| `/tasks/{id}` | `GET` | Get task by ID | |
+| `/tasks/{id}` | `PUT` | Update a task | |
+| `/tasks/{id}` | `DELETE` | Delete a task | |
+| `/tasks/{task_id}/activity` | `GET` | Get task activity log | [README Tutorial, Step 7](README.md#step-7-view-activity-log) |
+| `/categories` | `GET` | Get categories | |
+| `/categories` | `POST` | Create a category | [README Tutorial, Step 3](README.md#step-3-create-category) |
+| `/categories/{id}` | `GET` | Get category by ID | |
+| `/categories/{id}` | `PUT` | Update a category | |
+| `/categories/{id}` | `DELETE` | Delete a category | |
+| `/tasks/{task_id}/comments` | `GET` | Get task comments | |
+| `/tasks/{task_id}/comments` | `POST` | Add a comment | [README Tutorial, Step 6](README.md#step-6-add-comment) |
+| `/tasks/{task_id}/comments/{comment_id}` | `PATCH` | Update a comment | |
+| `/tasks/{task_id}/comments/{comment_id}` | `DELETE` | Delete a comment | |
+| `/health` | `GET` | Health check | |
+
+---
+
 ## API Route Reference
 
 ### 1. Authentication Endpoints
@@ -55,41 +84,11 @@ Welcome to the Authentication section! These endpoints act as the front door to 
 
 #### `POST /auth/register`
 - **Goal**: Register a new user in the database.
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "strongpassword123",
-    "full_name": "John Doe"
-  }
-  ```
-- **Response**: `201 Created`
-  ```json
-  {
-    "id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "email": "user@example.com",
-    "full_name": "John Doe",
-    "is_active": true,
-    "created_at": "2026-07-15T17:23:00.123456Z"
-  }
-  ```
+- **See Also**: See README Tutorial, Step 1 for a full walkthrough of this endpoint.
 
 #### `POST /auth/login`
 - **Goal**: Verify user credentials and issue an authentication JWT access token.
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "strongpassword123"
-  }
-  ```
-- **Response**: `200 OK`
-  ```json
-  {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YjBhODhiZi05N2NjLTQ0YTMtYWQ2Yy05NDExNjQ5YjgwMzIiLCJleHAiOjE3ODUwMzAzMDZ9...",
-    "token_type": "bearer"
-  }
-  ```
+- **See Also**: See README Tutorial, Step 2 for a full walkthrough of this endpoint.
 
 #### `GET /auth/me`
 - **Goal**: Fetch current authenticated user's profile details.
@@ -189,89 +188,12 @@ The Task Management section is the core of our application! Here, users can crea
 #### `GET /tasks`
 - **Goal**: Retrieve a list of tasks owned by the authenticated user with optional filtering by status/priority/category/tag, sorting, and pagination support.
 - **Headers**: `Authorization: Bearer <token>`
-- **Query Parameters**:
-  - `status`: `todo`, `in_progress`, `done` (optional)
-  - `priority`: `low`, `medium`, `high` (optional)
-  - `category_id`: Category UUID filter (optional)
-  - `tag`: Tag name string filter, e.g. `work` (optional)
-  - `page`: Page index number starting at 1, defaults to `1` (optional)
-  - `limit`: Page records limit, defaults to `10` (optional)
-  - `sort`: Column name to sort by, defaults to `created_at` (optional)
-  - `order`: Sort direction: `asc` or `desc`, defaults to `desc` (optional)
-- **Response**: `200 OK`
-  ```json
-  {
-    "tasks": [
-      {
-        "id": "e4b901d8-7956-42bc-9d0b-71a2be0ef3a0",
-        "title": "Build scaffold",
-        "description": "Initialize repository structure",
-        "status": "todo",
-        "priority": "medium",
-        "due_date": "2026-07-20T12:00:00Z",
-        "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
-        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-        "created_at": "2026-07-15T17:23:00Z",
-        "tags": [
-          {
-            "id": "c1a901e9-8967-43cd-ad1c-82b3cf1fg401",
-            "name": "work",
-            "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-            "created_at": "2026-07-15T17:25:00Z"
-          }
-        ]
-      }
-    ],
-    "total_count": 1,
-    "limit": 10,
-    "offset": 0,
-    "pages": 1
-  }
-  ```
+- **See Also**: See README Tutorial, Step 5 for a full walkthrough of this endpoint.
 
 #### `POST /tasks`
 - **Goal**: Create a new task (with optional category mapping and inline tags creation).
 - **Headers**: `Authorization: Bearer <token>`
-- **Request Body**:
-  ```json
-  {
-    "title": "Implement database",
-    "description": "Configure models and migrations",
-    "status": "todo",
-    "priority": "high",
-    "due_date": "2026-07-22T18:00:00Z",
-    "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
-    "tags": ["work", "important"]
-  }
-  ```
-- **Response**: `201 Created`
-  ```json
-  {
-    "id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
-    "title": "Implement database",
-    "description": "Configure models and migrations",
-    "status": "todo",
-    "priority": "high",
-    "due_date": "2026-07-22T18:00:00Z",
-    "category_id": "8a0a88bf-97cc-44a3-ad6c-9411649b8054",
-    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "created_at": "2026-07-15T17:30:00Z",
-    "tags": [
-      {
-        "id": "c1a901e9-8967-43cd-ad1c-82b3cf1fg401",
-        "name": "work",
-        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-        "created_at": "2026-07-15T17:25:00Z"
-      },
-      {
-        "id": "c2a901e9-8967-43cd-ad1c-82b3cf1fg402",
-        "name": "important",
-        "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-        "created_at": "2026-07-15T17:30:00Z"
-      }
-    ]
-  }
-  ```
+- **See Also**: See README Tutorial, Step 4 for a full walkthrough of this endpoint.
 
 #### `GET /tasks/{id}`
 - **Goal**: Fetch details of a single task by ID.
@@ -341,37 +263,7 @@ The Task Management section is the core of our application! Here, users can crea
 #### `GET /tasks/{task_id}/activity`
 - **Goal**: Fetch the append-only activity audit trail for a task (ordered newest first).
 - **Headers**: `Authorization: Bearer <token>`
-- **Query Parameters**:
-  - `limit`: Capped integer between 1 and 200 (default `50`).
-- **Response**: `200 OK`
-  ```json
-  [
-    {
-      "id": "e8c901e9-8967-43cd-ad1c-82b3cf1fg499",
-      "task_id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
-      "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-      "action": "task.updated",
-      "diff": {
-        "status": {
-          "before": "todo",
-          "after": "in_progress"
-        }
-      },
-      "occurred_at": "2026-07-25T12:00:00Z"
-    },
-    {
-      "id": "a1c901e9-8967-43cd-ad1c-82b3cf1fg411",
-      "task_id": "f5c901e9-8967-43cd-ad1c-82b3cf1fg4b1",
-      "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-      "action": "task.created",
-      "diff": null,
-      "occurred_at": "2026-07-25T11:50:00Z"
-    }
-  ]
-  ```
-- **Error Responses**:
-  - `404 Not Found`: Task not found.
-  - `403 Forbidden`: User does not own the task.
+- **See Also**: See README Tutorial, Step 7 for a full walkthrough of this endpoint.
 
 ---
 
@@ -397,21 +289,7 @@ To help keep things organized, the Category Management section allows users to g
 #### `POST /categories`
 - **Goal**: Create a new category.
 - **Headers**: `Authorization: Bearer <token>`
-- **Request Body**:
-  ```json
-  {
-    "name": "Personal Tasks"
-  }
-  ```
-- **Response**: `201 Created`
-  ```json
-  {
-    "id": "9a0b88bf-97cc-44a3-ad6c-9411649b8055",
-    "name": "Personal Tasks",
-    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "created_at": "2026-07-15T17:35:00Z"
-  }
-  ```
+- **See Also**: See README Tutorial, Step 3 for a full walkthrough of this endpoint.
 
 #### `GET /categories/{id}`
 - **Goal**: Retrieve details of a specific category by ID.
@@ -481,27 +359,7 @@ All endpoints below require authentication via a valid JWT bearer token.
 #### `POST /tasks/{task_id}/comments`
 - **Goal**: Create a new comment on the specified task.
 - **Headers**: `Authorization: Bearer <token>`
-- **Request Body**:
-  ```json
-  {
-    "body": "This is a new task comment."
-  }
-  ```
-- **Response**: `201 Created`
-  ```json
-  {
-    "id": "1c0a88bf-97cc-44a3-ad6c-9411649b8090",
-    "task_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "user_id": "7b0a88bf-97cc-44a3-ad6c-9411649b8032",
-    "body": "This is a new task comment.",
-    "created_at": "2026-07-25T11:55:00Z",
-    "updated_at": null
-  }
-  ```
-- **Error Codes**:
-  - `400 Bad Request`: Body validation fails (e.g. empty comment).
-  - `404 Not Found`: Task not found.
-  - `403 Forbidden`: Task belongs to another user.
+- **See Also**: See README Tutorial, Step 6 for a full walkthrough of this endpoint.
 
 #### `PATCH /tasks/{task_id}/comments/{comment_id}`
 - **Goal**: Update the body text of an existing comment.
