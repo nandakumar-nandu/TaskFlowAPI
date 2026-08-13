@@ -21,11 +21,11 @@ from app.core.database import get_db
 import sys
 import logging
 import json
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.limiter import limiter
 
 # ⚙️ JSON LOGGING SETUP
 class JSONFormatter(logging.Formatter):
@@ -54,16 +54,7 @@ from app.routes.comments import router as comments_router
 from app.middleware.upload_limit import UploadSizeLimitMiddleware
 
 # ⚙️ RATE LIMITER SETUP
-# slowapi uses the client's IP address (get_remote_address) as the bucket key,
-# meaning each unique IP is tracked independently.
-# Default global limit: 100 requests per minute per IP.
-# 🧪 The enabled flag auto-disables limiting during pytest runs so test
-#    assertions are never blocked by rate limit errors.
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["100/minute"],
-    enabled="pytest" not in sys.modules
-)
+# limiter is imported from app.core.limiter
 
 # ⚙️ CREATE THE FASTAPI APPLICATION INSTANCE
 # The title, version, and description appear in the auto-generated Swagger UI
