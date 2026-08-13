@@ -64,24 +64,31 @@ If you want to run this API on your own computer, follow these simple steps!
    cd TaskFlowAPI
    ```
 
-2. **Configure Environment Variables**
+2. **Install Development Tools (Optional but Recommended)**
+   If you plan to contribute to the code, install the development tools and set up pre-commit hooks to automatically check your code for errors before saving:
+   ```bash
+   pip install -r requirements-dev.txt
+   pre-commit install
+   ```
+
+3. **Configure Environment Variables**
    The application needs some secret passwords and configurations to run. We provide a template file for you:
    - Copy `.env.example` and rename it to `.env`.
    - You can leave the default values inside for local testing!
 
-3. **Start Docker**
+4. **Start Docker**
    Make sure you have Docker installed. We use Docker to automatically download and run the database and the API without you having to install them manually.
    ```bash
    docker-compose up --build -d
    ```
 
-4. **Run Database Migrations**
+5. **Run Database Migrations**
    Now we need to tell the database to create all the empty tables (like `users` and `tasks`).
    ```bash
    docker-compose exec api alembic upgrade head
    ```
 
-5. **Access the API!**
+6. **Access the API!**
    You are all set! Open your web browser and go to [http://localhost:8000/docs](http://localhost:8000/docs). This is a beautiful, interactive dashboard where you can click buttons to test the API directly!
 
 ---

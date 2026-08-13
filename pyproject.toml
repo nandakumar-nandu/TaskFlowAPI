@@ -1,0 +1,21 @@
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "sqlalchemy.*",
+    "jose.*",
+    "passlib.*",
+    "alembic.*",
+    "bcrypt.*"
+]
+ignore_missing_imports = true

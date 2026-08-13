@@ -39,7 +39,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
-      # 🚀 Step 5: Execute test suite and display code coverage report
+      # 🚀 Step 5: Linting and Formatting Check
+      - name: Code Formatting (Black)
+        run: black --check app tests/
+
+      - name: Linting (Flake8)
+        run: flake8 app tests/
+
+      # 🚀 Step 6: Static Type Checking
+      - name: Type Checking (Mypy)
+        run: mypy app
+
+      # 🚀 Step 7: Security Scanning
+      - name: Security Scan (Bandit)
+        run: bandit -r app/
+
+      # 🚀 Step 8: Execute test suite and display code coverage report
       - name: Run Pytest Test Suite & Coverage
         run: |
           pytest --cov=app tests/
