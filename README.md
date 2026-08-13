@@ -122,6 +122,58 @@ pytest --cov=app tests/
 
 ---
 
+## 📘 Tutorial: Your First 10 Minutes with TaskFlowAPI
+*This is a condensed version of the full [WALKTHROUGH.md](file:///d:/Projects_Portfolio/TaskFlowAPI/WALKTHROUGH.md) guide.*
+
+### Step 1: Register
+- **Endpoint**: `POST /auth/register`
+- **Request Payload**: `{"email": "user@example.com", "password": "securepassword", "full_name": "Test User"}`
+- **Behind the Scenes**: The API receives the payload, hashes the password using `bcrypt`, creates a new `User` model, and commits it to the database.
+- **Expected Response**: `201 Created` with the new user's metadata (excluding the password).
+
+### Step 2: Login
+- **Endpoint**: `POST /auth/login`
+- **Request Payload**: `{"username": "user@example.com", "password": "securepassword"}`
+- **Behind the Scenes**: The API fetches the user by email, verifies the password against the stored hash, and generates a JWT (JSON Web Token) signed with a secret key.
+- **Expected Response**: `200 OK` with the `access_token` and `token_type` ("bearer").
+
+### Step 3: Create Category
+- **Endpoint**: `POST /categories`
+- **Request Payload**: `{"name": "Work Projects"}` (Requires `Authorization: Bearer <token>` header)
+- **Behind the Scenes**: The API decodes the JWT to find the user's ID. It then creates a new `Category` model linked to that user and saves it to the database.
+- **Expected Response**: `201 Created` with the new category details (including its UUID).
+
+### Step 4: Create Task with Tags
+- **Endpoint**: `POST /tasks`
+- **Request Payload**: `{"title": "Finish Report", "description": "Q3 Sales", "status": "todo", "priority": "high", "category_id": "<uuid-from-step-3>", "tags": ["urgent", "sales"]}`
+- **Behind the Scenes**: The API validates the category belongs to the user. It creates the `Task`, finds or creates the requested `Tag`s, links them in the `task_tags` junction table, and creates a `TaskActivity` log entry recording the creation.
+- **Expected Response**: `201 Created` with the task details, nested category, and array of tags.
+
+### Step 5: Fetch Task List
+- **Endpoint**: `GET /tasks?status=todo&priority=high`
+- **Request Payload**: None (Query parameters used instead)
+- **Behind the Scenes**: The API queries the database for tasks belonging to the user, applying the filters provided. It supports pagination and dynamic sorting.
+- **Expected Response**: `200 OK` with a paginated array of tasks.
+
+### Step 6: Add Comment
+- **Endpoint**: `POST /tasks/<task-uuid>/comments`
+- **Request Payload**: `{"body": "I need to ask Sarah for the Q3 numbers."}`
+- **Behind the Scenes**: The API verifies the task belongs to the user, then creates a new `Comment` linked to the task and the user.
+- **Expected Response**: `201 Created` with the comment details.
+
+### Step 7: View Activity Log
+- **Endpoint**: `GET /tasks/<task-uuid>/activity`
+- **Request Payload**: None
+- **Behind the Scenes**: The API queries the `task_activity` table for all logs related to this task, returning an append-only audit trail of who did what and when.
+- **Expected Response**: `200 OK` with an array of activity logs (e.g., showing the task was "created").
+
+### Step 8: Run Tests
+- **Command**: `pytest --cov=app tests/`
+- **Behind the Scenes**: The `pytest` framework spins up a test environment, using an in-memory SQLite database or a test PostgreSQL instance. It overrides the FastAPI `get_db` dependency to use test sessions, simulating HTTP requests via `httpx.AsyncClient`, and validates the API logic securely without affecting production data.
+- **Expected Response**: A terminal output showing all tests passing and a coverage report indicating the percentage of code tested.
+
+---
+
 ## Glossary for Beginners
 
 - **JWT (JSON Web Token)**: A secure, encrypted digital "ID card" the API gives you when you log in. You show this card with every request to prove who you are.
