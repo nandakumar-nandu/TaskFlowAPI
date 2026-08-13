@@ -36,8 +36,25 @@ async def get_tasks(
     order: str = "desc"
 ) -> Dict[str, Any]:
     """
-    ⚙️ Retrieve a paginated, filtered, and sorted list of tasks owned by a specific user.
-    🔒 Authorization Check: Filters queries strictly by user_id so users cannot view tasks of other accounts.
+    ⚙️ Retrieve a paginated, filtered, and sorted list of tasks.
+
+    🔒 Authorization Check: Filters queries strictly by `user_id` so users
+    cannot view tasks of other accounts.
+
+    Args:
+        db: The active database session.
+        user_id: The UUID of the requesting user.
+        status: Optional filter by TaskStatus enum.
+        priority: Optional filter by TaskPriority enum.
+        category_id: Optional filter by Category UUID.
+        tag: Optional filter by Tag name.
+        page: Page number (1-indexed).
+        limit: Number of items per page.
+        sort: Field name to sort by.
+        order: Sort direction ('asc' or 'desc').
+
+    Returns:
+        Dict: A dictionary containing the paginated `tasks` list and metadata.
     """
     # ⚙️ 1. Initialize base select query and count query
     query = select(Task).where(Task.user_id == user_id)
@@ -106,8 +123,18 @@ async def _resolve_tags(
     tag_names: List[str]
 ) -> List[Tag]:
     """
-    ⚙️ Helper method to retrieve existing tag objects or create new ones
-    scoped to the authenticated user's ID.
+    ⚙️ Helper method to retrieve existing tag objects or create new ones.
+
+    Scoped to the authenticated user's ID. Prevents tag duplication by checking
+    if a tag with the same name already exists for this user before inserting.
+
+    Args:
+        db: The active database session.
+        user_id: The UUID of the task owner.
+        tag_names: A list of raw tag string names.
+
+    Returns:
+        List[Tag]: A list of SQLAlchemy Tag instances.
     """
     resolved_tags = []
     for tag_name in tag_names:
@@ -136,8 +163,17 @@ async def create_task(
 ) -> Task:
     """
     ⚙️ Register a new task.
-    🔒 Authorization Check: Associates the task directly with the creator user_id to enforce ownership.
-    Validates category_id ownership if provided.
+
+    🔒 Authorization Check: Associates the task directly with the creator `user_id`
+    to enforce ownership. Validates `category_id` ownership if provided.
+
+    Args:
+        db: The active database session.
+        user_id: The UUID of the user creating the task.
+        task_in: The TaskCreate schema containing task details.
+
+    Returns:
+        Task: The newly created task record.
     """
     # 🔒 Category Ownership Validation
     if task_in.category_id:
@@ -181,9 +217,21 @@ async def update_task(
 ) -> Optional[Task]:
     """
     ⚙️ Modify details of a specific task.
-    🔒 Authorization Check: Fetches task by task_id first and compares the owned user_id.
-    Raises HTTP 403 Forbidden if the task belongs to another user.
-    Validates category_id ownership if updated.
+
+    🔒 Authorization Check: Fetches task by `task_id` first and compares the
+    owned `user_id`. Raises HTTP 403 Forbidden if the task belongs to another user.
+    Validates `category_id` ownership if updated.
+
+    Calculates a field-level diff and logs the change to `task_activity`.
+
+    Args:
+        db: The active database session.
+        task_id: The UUID of the task to update.
+        user_id: The UUID of the user requesting the update.
+        task_in: The TaskUpdate schema containing the changes.
+
+    Returns:
+        Task: The updated task record, or None if not found.
     """
     # Fetch task instance and verify ownership
     stmt = select(Task).where(Task.id == task_id)
@@ -243,8 +291,19 @@ async def delete_task(
 ) -> bool:
     """
     ⚙️ Delete a specific task.
-    🔒 Authorization Check: Fetches task by task_id first and checks ownership.
+
+    🔒 Authorization Check: Fetches task by `task_id` first and checks ownership.
     Raises HTTP 403 Forbidden if the task belongs to another user.
+
+    Logs the deletion event to `task_activity` before executing the delete.
+
+    Args:
+        db: The active database session.
+        task_id: The UUID of the task to delete.
+        user_id: The UUID of the user requesting deletion.
+
+    Returns:
+        bool: True if deleted successfully, False if task was not found.
     """
     stmt = select(Task).where(Task.id == task_id)
     result = await db.execute(stmt)

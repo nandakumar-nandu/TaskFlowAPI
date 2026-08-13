@@ -22,7 +22,16 @@ async def get_categories(
 ) -> List[Category]:
     """
     ⚙️ Retrieve all categories owned by a specific user.
-    🔒 Authorization Check: Filters strictly by user_id so users cannot view other users' categories.
+
+    🔒 Authorization Check: Filters strictly by `user_id` so users cannot view
+    other users' categories.
+
+    Args:
+        db: The active database session.
+        user_id: The UUID of the requesting user.
+
+    Returns:
+        List[Category]: A list of category records ordered alphabetically.
     """
     stmt = select(Category).where(Category.user_id == user_id).order_by(Category.name.asc())
     result = await db.execute(stmt)
@@ -36,7 +45,17 @@ async def create_category(
 ) -> Category:
     """
     ⚙️ Create a new category for a user.
-    🔒 Authorization Check: Associates the category directly with the requesting user_id to enforce ownership.
+
+    🔒 Authorization Check: Associates the category directly with the requesting
+    `user_id` to enforce ownership.
+
+    Args:
+        db: The active database session.
+        user_id: The UUID of the user creating the category.
+        category_in: The CategoryCreate schema containing category details.
+
+    Returns:
+        Category: The newly created category record.
     """
     db_category = Category(
         name=category_in.name,
@@ -55,8 +74,17 @@ async def get_category_by_id(
 ) -> Optional[Category]:
     """
     ⚙️ Fetch a single category by ID.
-    🔒 Authorization Check: Compares category's owner user_id to the requesting user_id.
-    Raises HTTP 403 Forbidden if ownership mismatch occurs.
+
+    🔒 Authorization Check: Compares category's owner `user_id` to the requesting
+    `user_id`. Raises HTTP 403 Forbidden if ownership mismatch occurs.
+
+    Args:
+        db: The active database session.
+        category_id: The UUID of the category to fetch.
+        user_id: The UUID of the requesting user.
+
+    Returns:
+        Category: The category record, or None if not found.
     """
     stmt = select(Category).where(Category.id == category_id)
     result = await db.execute(stmt)
@@ -83,8 +111,18 @@ async def update_category(
 ) -> Optional[Category]:
     """
     ⚙️ Update an existing category name.
+
     🔒 Authorization Check: Verifies ownership of category before making modifications.
     Raises HTTP 403 Forbidden on authorization check failures.
+
+    Args:
+        db: The active database session.
+        category_id: The UUID of the category to update.
+        user_id: The UUID of the requesting user.
+        category_in: The CategoryUpdate schema containing the new name.
+
+    Returns:
+        Category: The updated category record, or None if not found.
     """
     db_category = await get_category_by_id(db, category_id, user_id)
     if not db_category:
@@ -103,8 +141,17 @@ async def delete_category(
 ) -> bool:
     """
     ⚙️ Delete a specific category.
+
     🔒 Authorization Check: Verifies ownership of category before deletion.
     Raises HTTP 403 Forbidden on authorization check failures.
+
+    Args:
+        db: The active database session.
+        category_id: The UUID of the category to delete.
+        user_id: The UUID of the requesting user.
+
+    Returns:
+        bool: True if deleted successfully, False if not found.
     """
     db_category = await get_category_by_id(db, category_id, user_id)
     if not db_category:

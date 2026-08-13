@@ -24,9 +24,20 @@ def log(
     ⚙️ Creates a TaskActivity instance and adds it to the current database session.
     
     🔒 Atomic Transaction Pattern:
-    This function does NOT call commit. The caller (task_service) is responsible for
-    committing. This keeps the log entry and the task mutation in the same atomic transaction —
-    if the task mutation rolls back, the log entry rolls back too.
+    This function does NOT call `await db.commit()`. The caller (e.g. `task_service`)
+    is responsible for committing. This keeps the log entry and the task mutation
+    in the same atomic transaction — if the task mutation rolls back, the log entry
+    rolls back too.
+
+    Args:
+        db: The active database session.
+        task_id: The UUID of the affected task.
+        user_id: The UUID of the acting user (can be None).
+        action: The event string (e.g., 'task.created', 'task.updated').
+        diff: A dictionary of changed fields (optional).
+
+    Returns:
+        TaskActivity: The unstored activity instance added to the session.
     """
     activity = TaskActivity(
         task_id=task_id,
@@ -44,10 +55,21 @@ async def get_activity(
     limit: int = 50
 ) -> List[TaskActivity]:
     """
-    ⚙️ Retrieves audit activity logs for a specific task ordered by occurred_at descending (newest first).
+    ⚙️ Retrieves audit activity logs for a specific task.
+
+    Results are ordered by `occurred_at` descending (newest first).
     
     🛡️ Hard cap protection:
-    Applies a hard cap of min(limit, 200) to prevent runaway queries on tasks with long histories.
+    Applies a hard cap of min(limit, 200) to prevent runaway queries on
+    tasks with exceptionally long histories.
+
+    Args:
+        db: The active database session.
+        task_id: The UUID of the task to fetch logs for.
+        limit: The maximum number of records to return.
+
+    Returns:
+        List[TaskActivity]: A list of activity records.
     """
     capped_limit = min(max(1, limit), 200)
     

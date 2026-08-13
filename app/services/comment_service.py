@@ -24,7 +24,18 @@ async def _assert_task_owner(
 ) -> Task:
     """
     🔒 Private guard function to verify task existence and ownership.
-    🛡️ Returns 404 before 403 to prevent task existence enumeration.
+
+    🛡️ Security Note: Returns 404 before 403 to prevent malicious actors from
+    enumerating task UUIDs (they can't tell the difference between "doesn't exist"
+    and "belongs to someone else").
+
+    Args:
+        db: The active database session.
+        task_id: The UUID of the parent task.
+        user_id: The UUID of the requesting user.
+
+    Returns:
+        Task: The parent task if verification passes.
     """
     stmt = select(Task).where(Task.id == task_id)
     result = await db.execute(stmt)
@@ -52,7 +63,16 @@ async def list_comments(
 ) -> List[Comment]:
     """
     ⚙️ List all comments on a given task.
-    🔒 Rule: Caller must own the parent task to list its comments.
+
+    🔒 Authorization Rule: Caller must own the parent task to list its comments.
+
+    Args:
+        db: The active database session.
+        task_id: The UUID of the parent task.
+        user_id: The UUID of the requesting user (to verify task ownership).
+
+    Returns:
+        List[Comment]: A list of comment records.
     """
     await _assert_task_owner(db, task_id, user_id)
     
@@ -69,7 +89,17 @@ async def create_comment(
 ) -> Comment:
     """
     ⚙️ Create a new comment on a task.
-    🔒 Rule: Caller must own the parent task to comment on it.
+
+    🔒 Authorization Rule: Caller must own the parent task to comment on it.
+
+    Args:
+        db: The active database session.
+        task_id: The UUID of the parent task.
+        user_id: The UUID of the requesting user (assigned as comment author).
+        payload: The CommentCreate schema containing the body.
+
+    Returns:
+        Comment: The newly created comment record.
     """
     await _assert_task_owner(db, task_id, user_id)
     
@@ -92,8 +122,19 @@ async def update_comment(
 ) -> Comment:
     """
     ⚙️ Update the body of a comment.
-    🔒 Rule: Authorship check is on the comment itself.
-    Even the task owner cannot edit another user's comment.
+
+    🔒 Authorization Rule: Authorship check is on the comment itself.
+    Only the author of the comment can edit it. Even if you own the parent task,
+    you cannot edit someone else's comment.
+
+    Args:
+        db: The active database session.
+        comment_id: The UUID of the comment to edit.
+        user_id: The UUID of the requesting user.
+        payload: The CommentUpdate schema containing the new body.
+
+    Returns:
+        Comment: The updated comment record.
     """
     stmt = select(Comment).where(Comment.id == comment_id)
     result = await db.execute(stmt)
@@ -126,8 +167,17 @@ async def delete_comment(
 ) -> bool:
     """
     ⚙️ Delete a specific comment.
-    🔒 Rule: Authorship check is on the comment itself.
+
+    🔒 Authorization Rule: Authorship check is on the comment itself.
     Only the author user can delete their comment.
+
+    Args:
+        db: The active database session.
+        comment_id: The UUID of the comment to delete.
+        user_id: The UUID of the requesting user.
+
+    Returns:
+        bool: True if deleted successfully (or raises HTTPException on error).
     """
     stmt = select(Comment).where(Comment.id == comment_id)
     result = await db.execute(stmt)
