@@ -21,27 +21,11 @@ async def update_user(
     user_id: uuid.UUID,
     payload: UserUpdate
 ) -> User:
-    """
-    ⚙️ Applies partial updates to the user profile fields.
-
-    Uses `model_dump(exclude_unset=True)` on the Pydantic schema to extract only
-    the fields the client explicitly included in the request. If a password is
-    provided, it is cryptographically hashed before saving.
-
-    Args:
-        db: The active database session.
-        user_id: The UUID of the user to update.
-        payload: The UserUpdate schema containing the new values.
-
-    Returns:
-        User: The updated user record.
-    """
-    # Fetch User
+    """Applies partial updates to the user profile fields. Hashes the password if provided."""
     stmt = select(User).where(User.id == user_id)
     result = await db.execute(stmt)
     user = result.scalar_one()
 
-    # Apply updates
     update_data = payload.model_dump(exclude_unset=True)
     
     # If password is provided, hash it before saving
@@ -63,21 +47,7 @@ async def save_avatar(
     user: User,
     file: UploadFile
 ) -> User:
-    """
-    ⚙️ Saves the uploaded avatar image file to disk.
-
-    Builds a deterministic filename using the user's UUID (e.g. `1234-abcd.jpg`)
-    to prevent file orphans and overwrite old avatars cleanly. The physical file
-    is stored in `media/avatars/`, and the relative URL is saved in the DB.
-
-    Args:
-        db: The active database session.
-        user: The user object uploading the avatar.
-        file: The FastAPI UploadFile object containing the image bytes.
-
-    Returns:
-        User: The updated user record.
-    """
+    """Saves the uploaded avatar image file to disk. Builds a deterministic filename using the user's UUID."""
     # Derive extension from content type
     mime_to_ext = {
         "image/jpeg": ".jpg",

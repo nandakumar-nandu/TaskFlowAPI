@@ -23,19 +23,8 @@ async def _assert_task_owner(
     user_id: uuid.UUID
 ) -> Task:
     """
-    🔒 Private guard function to verify task existence and ownership.
-
-    🛡️ Security Note: Returns 404 before 403 to prevent malicious actors from
-    enumerating task UUIDs (they can't tell the difference between "doesn't exist"
-    and "belongs to someone else").
-
-    Args:
-        db: The active database session.
-        task_id: The UUID of the parent task.
-        user_id: The UUID of the requesting user.
-
-    Returns:
-        Task: The parent task if verification passes.
+    Private guard function to verify task existence and ownership.
+    Returns 404 before 403 to prevent malicious actors from enumerating task UUIDs.
     """
     stmt = select(Task).where(Task.id == task_id)
     result = await db.execute(stmt)
@@ -61,19 +50,7 @@ async def list_comments(
     task_id: uuid.UUID,
     user_id: uuid.UUID
 ) -> List[Comment]:
-    """
-    ⚙️ List all comments on a given task.
-
-    🔒 Authorization Rule: Caller must own the parent task to list its comments.
-
-    Args:
-        db: The active database session.
-        task_id: The UUID of the parent task.
-        user_id: The UUID of the requesting user (to verify task ownership).
-
-    Returns:
-        List[Comment]: A list of comment records.
-    """
+    """List all comments on a given task. Caller must own the parent task to list its comments."""
     await _assert_task_owner(db, task_id, user_id)
     
     stmt = select(Comment).where(Comment.task_id == task_id).order_by(Comment.created_at.asc())
@@ -87,20 +64,7 @@ async def create_comment(
     user_id: uuid.UUID,
     payload: CommentCreate
 ) -> Comment:
-    """
-    ⚙️ Create a new comment on a task.
-
-    🔒 Authorization Rule: Caller must own the parent task to comment on it.
-
-    Args:
-        db: The active database session.
-        task_id: The UUID of the parent task.
-        user_id: The UUID of the requesting user (assigned as comment author).
-        payload: The CommentCreate schema containing the body.
-
-    Returns:
-        Comment: The newly created comment record.
-    """
+    """Create a new comment on a task. Caller must own the parent task to comment on it."""
     await _assert_task_owner(db, task_id, user_id)
     
     db_comment = Comment(
@@ -120,22 +84,7 @@ async def update_comment(
     user_id: uuid.UUID,
     payload: CommentUpdate
 ) -> Comment:
-    """
-    ⚙️ Update the body of a comment.
-
-    🔒 Authorization Rule: Authorship check is on the comment itself.
-    Only the author of the comment can edit it. Even if you own the parent task,
-    you cannot edit someone else's comment.
-
-    Args:
-        db: The active database session.
-        comment_id: The UUID of the comment to edit.
-        user_id: The UUID of the requesting user.
-        payload: The CommentUpdate schema containing the new body.
-
-    Returns:
-        Comment: The updated comment record.
-    """
+    """Update the body of a comment. Only the author of the comment can edit it."""
     stmt = select(Comment).where(Comment.id == comment_id)
     result = await db.execute(stmt)
     comment = result.scalar_one_or_none()
@@ -165,20 +114,7 @@ async def delete_comment(
     comment_id: uuid.UUID,
     user_id: uuid.UUID
 ) -> bool:
-    """
-    ⚙️ Delete a specific comment.
-
-    🔒 Authorization Rule: Authorship check is on the comment itself.
-    Only the author user can delete their comment.
-
-    Args:
-        db: The active database session.
-        comment_id: The UUID of the comment to delete.
-        user_id: The UUID of the requesting user.
-
-    Returns:
-        bool: True if deleted successfully (or raises HTTPException on error).
-    """
+    """Delete a specific comment. Only the author user can delete their comment."""
     stmt = select(Comment).where(Comment.id == comment_id)
     result = await db.execute(stmt)
     comment = result.scalar_one_or_none()
