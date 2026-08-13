@@ -21,7 +21,9 @@ pytestmark = pytest.mark.asyncio
 
 async def test_create_comment(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    user can post a comment on their own task
+    🧪 Scenario: Post a new comment on a task owned by the authenticated user.
+    🔍 Why it matters: Validates that users can successfully create comments on tasks
+    they own, mapping the relationships correctly and returning a 201 status code.
     """
     task_id = uuid.uuid4()
     task = Task(id=task_id, user_id=auth_user.id, title="Test Task")
@@ -61,8 +63,9 @@ async def test_create_comment(client: httpx.AsyncClient, db: AsyncMock, auth_use
 
 async def test_list_comments_ordered(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    list returns all comments in
-    created_at ascending order
+    🧪 Scenario: Retrieve a list of comments for a specific task.
+    🔍 Why it matters: Ensures that the API returns the comments belonging to the
+    requested task, sorted in ascending order of their creation timestamp.
     """
     task_id = uuid.uuid4()
     task = Task(id=task_id, user_id=auth_user.id, title="Test Task")
@@ -110,8 +113,9 @@ async def test_list_comments_ordered(client: httpx.AsyncClient, db: AsyncMock, a
 
 async def test_update_own_comment(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    author can update body,
-    updated_at must be non-null after edit
+    🧪 Scenario: Modify the body text of an existing comment.
+    🔍 Why it matters: Confirms that the comment author can edit their comment,
+    and that the `updated_at` timestamp is properly recorded upon modification.
     """
     task_id = uuid.uuid4()
     comment_id = uuid.uuid4()
@@ -154,8 +158,9 @@ async def test_update_own_comment(client: httpx.AsyncClient, db: AsyncMock, auth
 
 async def test_delete_comment_forbidden(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    a second user cannot delete
-    another user's comment, expects HTTP 403
+    🧪 Scenario: Attempt to delete a comment authored by another user.
+    🔍 Why it matters: Enforces strict row-level security. A user cannot delete
+    another person's comment, even if they share the same task. Expects HTTP 403.
     """
     task_id = uuid.uuid4()
     comment_id = uuid.uuid4()

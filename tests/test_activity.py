@@ -21,8 +21,9 @@ pytestmark = pytest.mark.asyncio
 
 async def test_create_logs_activity(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    creating a task must produce exactly one
-    task.created entry in the activity log
+    🧪 Scenario: Trigger a task creation event to verify activity logging.
+    🔍 Why it matters: Ensures that when a task is created, a corresponding
+    `task.created` entry is generated in the audit log in the same transaction.
     """
     task_payload = {"title": "Task to audit"}
     
@@ -62,9 +63,9 @@ async def test_create_logs_activity(client: httpx.AsyncClient, db: AsyncMock, au
 
 async def test_update_logs_diff(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    updating task status must produce a
-    task.updated entry whose diff contains a status key
-    with correct before and after values
+    🧪 Scenario: Modify a task's status and check the generated diff payload.
+    🔍 Why it matters: Validates the diff calculation logic. A `task.updated` entry
+    must include a JSON diff showing the `before` and `after` states of modified fields.
     """
     task_id = uuid.uuid4()
     task = Task(
@@ -116,8 +117,9 @@ async def test_update_logs_diff(client: httpx.AsyncClient, db: AsyncMock, auth_u
 
 async def test_activity_forbidden_for_other_user(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
     """
-    a user who does not own the task must
-    receive HTTP 403 when requesting its activity log
+    🧪 Scenario: Attempt to view the activity audit log of a task owned by someone else.
+    🔍 Why it matters: Protects sensitive audit trails. Only the task owner should
+    be able to view the history of their task, returning HTTP 403 for unauthorized access.
     """
     task_id = uuid.uuid4()
     other_user_id = uuid.uuid4()
