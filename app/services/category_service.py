@@ -10,7 +10,8 @@ import uuid
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from fastapi import HTTPException, status
+from fastapi import status, status
+from app.core.exceptions import TaskNotFoundError, TaskForbiddenError, CategoryNotFoundError, CategoryForbiddenError, CommentNotFoundError, CommentForbiddenError, InvalidCredentialsError, DuplicateEmailError
 
 from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryUpdate
@@ -95,10 +96,7 @@ async def get_category_by_id(
 
     # 🔒 Ownership Check: Verify category belongs to requesting user ID
     if db_category.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this category"
-        )
+        raise CategoryForbiddenError()
 
     return db_category
 

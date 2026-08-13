@@ -8,6 +8,7 @@ Implements full CRUD routes for Category resources. All routes are protected by 
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Response
+from app.core.exceptions import TaskNotFoundError, TaskForbiddenError, CategoryNotFoundError, CategoryForbiddenError, CommentNotFoundError, CommentForbiddenError, InvalidCredentialsError, DuplicateEmailError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -79,10 +80,7 @@ async def read_category_by_id(
         user_id=current_user.id
     )
     if not db_category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
-        )
+        raise CategoryNotFoundError()
     return db_category
 
 
@@ -111,10 +109,7 @@ async def update_existing_category(
         category_in=category_in
     )
     if not db_category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
-        )
+        raise CategoryNotFoundError()
     return db_category
 
 
@@ -145,8 +140,5 @@ async def delete_existing_category(
         user_id=current_user.id
     )
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
-        )
+        raise CategoryNotFoundError()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

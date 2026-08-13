@@ -14,7 +14,8 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from fastapi import HTTPException, status
+from fastapi import status, status
+from app.core.exceptions import TaskNotFoundError, TaskForbiddenError, CategoryNotFoundError, CategoryForbiddenError, CommentNotFoundError, CommentForbiddenError, InvalidCredentialsError, DuplicateEmailError
 
 from app.models.task import Task, TaskStatus, TaskPriority
 from app.models.category import Category
@@ -121,10 +122,7 @@ async def create_task(
         stmt = select(Category).where(Category.id == task_in.category_id, Category.user_id == user_id)
         result = await db.execute(stmt)
         if not result.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found"
-            )
+            raise CategoryNotFoundError()
 
     # Resolve tags
     db_tags = []
@@ -175,10 +173,7 @@ async def update_task(
         stmt = select(Category).where(Category.id == task_in.category_id, Category.user_id == user_id)
         result = await db.execute(stmt)
         if not result.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found"
-            )
+            raise CategoryNotFoundError()
 
     # Compute field diffs BEFORE applying changes to capture genuine before values
     update_data = task_in.model_dump(exclude_unset=True, exclude={"tags"})

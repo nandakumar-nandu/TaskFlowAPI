@@ -8,7 +8,8 @@ Implements transactional logic for task comments with strict ownership check rul
 import uuid
 from datetime import datetime, timezone
 from typing import List
-from fastapi import HTTPException, status
+from fastapi import status, status
+from app.core.exceptions import TaskNotFoundError, TaskForbiddenError, CategoryNotFoundError, CategoryForbiddenError, CommentNotFoundError, CommentForbiddenError, InvalidCredentialsError, DuplicateEmailError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -31,16 +32,10 @@ async def _assert_task_owner(
     task = result.scalar_one_or_none()
     
     if not task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found"
-        )
+        raise TaskNotFoundError()
         
     if task.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this task"
-        )
+        raise TaskForbiddenError()
         
     return task
 
@@ -90,16 +85,10 @@ async def update_comment(
     comment = result.scalar_one_or_none()
     
     if not comment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
-        )
+        raise CommentNotFoundError()
         
     if comment.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to edit this comment"
-        )
+        raise CommentForbiddenError()
         
     comment.body = payload.body
     comment.updated_at = datetime.now(timezone.utc)
@@ -120,16 +109,10 @@ async def delete_comment(
     comment = result.scalar_one_or_none()
     
     if not comment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
-        )
+        raise CommentNotFoundError()
         
     if comment.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to delete this comment"
-        )
+        raise CommentForbiddenError(detail="You do not have permission to delete this comment")
         
     await db.delete(comment)
     await db.commit()

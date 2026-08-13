@@ -8,6 +8,7 @@ Implements full CRUD routes for Task resources. All routes are protected by JWT 
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+from app.core.exceptions import TaskNotFoundError, TaskForbiddenError, CategoryNotFoundError, CategoryForbiddenError, CommentNotFoundError, CommentForbiddenError, InvalidCredentialsError, DuplicateEmailError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -110,17 +111,11 @@ async def read_task_by_id(
     db_task = result.scalar_one_or_none()
     
     if not db_task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found"
-        )
+        raise TaskNotFoundError()
         
     # 🔒 Ownership Check: Verify requester owns the task
     if db_task.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this task"
-        )
+        raise TaskForbiddenError()
         
     return db_task
 
@@ -153,10 +148,7 @@ async def update_existing_task(
         task_in=task_in
     )
     if not db_task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found"
-        )
+        raise TaskNotFoundError()
     return db_task
 
 
@@ -185,10 +177,7 @@ async def delete_existing_task(
         user_id=current_user.id
     )
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found"
-        )
+        raise TaskNotFoundError()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -220,10 +209,7 @@ async def read_task_activity(
     task = result.scalar_one_or_none()
     
     if not task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found"
-        )
+        raise TaskNotFoundError()
         
     if task.user_id != current_user.id:
         raise HTTPException(
