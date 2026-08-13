@@ -1,3 +1,4 @@
+import uuid
 """CRUD operations for Comment model."""
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ class CRUDComment(CRUDBase[Comment]):
     """Comment-specific CRUD operations."""
 
     async def get_by_task(
-        self, db: AsyncSession, *, task_id: int
+        self, db: AsyncSession, *, task_id: uuid.UUID
     ) -> List[Comment]:
         """Get all comments for a specific task."""
         result = await db.execute(

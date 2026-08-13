@@ -10,8 +10,8 @@ import shutil
 from pathlib import Path
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
+from app.crud import user as crud_user
 from app.models.user import User
 from app.schemas.user import UserUpdate
 
@@ -22,9 +22,9 @@ async def update_user(
     payload: UserUpdate
 ) -> User:
     """Applies partial updates to the user profile fields. Hashes the password if provided."""
-    stmt = select(User).where(User.id == user_id)
-    result = await db.execute(stmt)
-    user = result.scalar_one()
+    user = await crud_user.get(db, id=user_id)
+    if not user:
+        raise ValueError("User not found")
 
     update_data = payload.model_dump(exclude_unset=True)
     
@@ -34,12 +34,8 @@ async def update_user(
         user.hashed_password = hash_password(update_data["password"])
         del update_data["password"]
 
-    for key, value in update_data.items():
-        setattr(user, key, value)
-
-    await db.commit()
-    await db.refresh(user)
-    return user
+    updated_user = await crud_user.update(db, db_obj=user, obj_in=update_data)
+    return updated_user
 
 
 async def save_avatar(
@@ -54,7 +50,7 @@ async def save_avatar(
         "image/png": ".png",
         "image/webp": ".webp"
     }
-    ext = mime_to_ext.get(file.content_type, ".png")
+    ext = mime_to_ext.get(file.content_type or "", ".png")
     
     filename = f"{user.id}{ext}"
     
@@ -70,8 +66,5 @@ async def save_avatar(
         
     # Store relative URL (e.g. "/media/avatars/uuid.png")
     relative_url = f"/media/avatars/{filename}"
-    user.avatar_url = relative_url
-    
-    await db.commit()
-    await db.refresh(user)
-    return user
+    updated_user = await crud_user.update(db, db_obj=user, obj_in={"avatar_url": relative_url})
+    return updated_user

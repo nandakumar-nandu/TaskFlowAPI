@@ -84,7 +84,7 @@ app.state.limiter = limiter
 # When a client exceeds the 100/min threshold, slowapi raises RateLimitExceeded.
 # This handler converts that exception into an HTTP 429 Too Many Requests response
 # with a Retry-After header so clients know when to try again.
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
 # ⚙️ REGISTER MIDDLEWARE (execution order is LIFO — last-in is outermost)
 # Rate limiter must come before auth middleware to prevent unnecessary token validation on rate-limited requests.

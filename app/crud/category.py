@@ -1,3 +1,4 @@
+import uuid
 """CRUD operations for Category model."""
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,11 +10,11 @@ class CRUDCategory(CRUDBase[Category]):
     """Category-specific CRUD operations."""
 
     async def get_by_owner(
-        self, db: AsyncSession, *, owner_id: int
+        self, db: AsyncSession, *, owner_id: uuid.UUID
     ) -> List[Category]:
         """Get all categories owned by a user."""
         result = await db.execute(
-            select(Category).where(Category.owner_id == owner_id)
+            select(Category).where(Category.user_id == owner_id).order_by(Category.name.asc())
         )
         return list(result.scalars().all())
 

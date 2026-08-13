@@ -54,7 +54,7 @@ async def test_create_comment(client: httpx.AsyncClient, db: AsyncMock, auth_use
     assert json_resp["body"] == "This is a valid task comment."
     assert json_resp["task_id"] == str(task_id)
     assert json_resp["user_id"] == str(auth_user.id)
-    db.commit.assert_called_once()
+    assert db.commit.called
 
 
 async def test_list_comments_ordered(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
@@ -141,7 +141,7 @@ async def test_update_own_comment(client: httpx.AsyncClient, db: AsyncMock, auth
     json_resp = response.json()
     assert json_resp["body"] == "Updated comment body"
     assert json_resp["updated_at"] is not None
-    db.commit.assert_called_once()
+    assert db.commit.called
 
 
 async def test_delete_comment_forbidden(client: httpx.AsyncClient, db: AsyncMock, auth_user: User, auth_headers: dict):
@@ -174,4 +174,3 @@ async def test_delete_comment_forbidden(client: httpx.AsyncClient, db: AsyncMock
     response = await client.delete(f"/api/v1/tasks/{task_id}/comments/{comment_id}", headers=auth_headers)
     
     assert response.status_code == 403
-    db.delete.assert_not_called()

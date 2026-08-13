@@ -12,5 +12,6 @@ from .task import task
 from .category import category
 from .comment import comment
 from .activity import activity
+from .tag import tag
 
-__all__ = ["user", "task", "category", "comment", "activity"]
+__all__ = ["user", "task", "category", "comment", "activity", "tag"]

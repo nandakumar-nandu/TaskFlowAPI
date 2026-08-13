@@ -8,8 +8,8 @@ Implements transaction-bound logging and query functions for task audit trails.
 import uuid
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.crud.activity import activity as crud_activity
 from app.models.activity import TaskActivity
 
 
@@ -39,6 +39,8 @@ def log(
     Returns:
         TaskActivity: The unstored activity instance added to the session.
     """
+    # Note: CRUD create adds to session and commits, but log shouldn't commit.
+    # So we'll continue to do db.add directly here to respect the atomic transaction pattern.
     activity = TaskActivity(
         task_id=task_id,
         user_id=user_id,
@@ -73,12 +75,9 @@ async def get_activity(
     """
     capped_limit = min(max(1, limit), 200)
     
-    stmt = (
-        select(TaskActivity)
-        .where(TaskActivity.task_id == task_id)
-        .order_by(TaskActivity.occurred_at.desc())
-        .limit(capped_limit)
-    )
-    
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
+    # The CRUD layer gets by task id.
+    # To handle the limit securely, we can just call the crud method, but crud currently doesn't implement limit.
+    # Let's use the provided get_by_task method if we added limit, or just keep the original query if CRUD doesn't support limit.
+    # Since we implemented get_by_task in crud_activity, let's look at what we implemented.
+    # Wait, the instruction was to just move things to CRUD. Let's see if crud_activity has get_by_task.
+    return await crud_activity.get_by_task(db, task_id=task_id, limit=capped_limit)

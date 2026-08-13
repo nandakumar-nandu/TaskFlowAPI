@@ -22,6 +22,9 @@ from app.models.category import Category
 from app.models.tag import Tag
 from app.schemas.task import TaskCreate, TaskUpdate
 from app.services import activity_service
+from app.crud.task import task as crud_task
+from app.crud.category import category as crud_category
+from app.crud.tag import tag as crud_tag
 
 
 async def get_tasks(
@@ -100,13 +103,10 @@ async def _resolve_tags(
         tag_name_stripped = tag_name.strip()
         if not tag_name_stripped:
             continue
-        stmt = select(Tag).where(Tag.name == tag_name_stripped, Tag.user_id == user_id)
-        result = await db.execute(stmt)
-        db_tag = result.scalar_one_or_none()
+        db_tag = await crud_tag.get_by_name_and_user(db, name=tag_name_stripped, user_id=user_id)
         
         if not db_tag:
-            db_tag = Tag(name=tag_name_stripped, user_id=user_id)
-            db.add(db_tag)
+            db_tag = await crud_tag.create(db, obj_in={"name": tag_name_stripped, "user_id": user_id})
             
         resolved_tags.append(db_tag)
     return resolved_tags
@@ -119,9 +119,8 @@ async def create_task(
 ) -> Task:
     """Create a new task and log the creation activity. Validates category ownership if provided."""
     if task_in.category_id:
-        stmt = select(Category).where(Category.id == task_in.category_id, Category.user_id == user_id)
-        result = await db.execute(stmt)
-        if not result.scalar_one_or_none():
+        cat = await crud_category.get(db, id=task_in.category_id)
+        if not cat or cat.user_id != user_id:
             raise CategoryNotFoundError()
 
     # Resolve tags
@@ -129,18 +128,21 @@ async def create_task(
     if task_in.tags:
         db_tags = await _resolve_tags(db, user_id, task_in.tags)
 
-    db_task = Task(
-        title=task_in.title,
-        description=task_in.description,
-        status=task_in.status,
-        priority=task_in.priority,
-        due_date=task_in.due_date,
-        category_id=task_in.category_id,
-        user_id=user_id,
-        tags=db_tags
+    db_task = await crud_task.create(
+        db,
+        obj_in={
+            "title": task_in.title,
+            "description": task_in.description,
+            "status": task_in.status,
+            "priority": task_in.priority,
+            "due_date": task_in.due_date,
+            "category_id": task_in.category_id,
+            "user_id": user_id,
+        }
     )
-    db.add(db_task)
-    await db.flush()
+    # The tags can't be added easily with just create if it uses dict expansion. Let's add them separately.
+    db_task.tags = db_tags
+    
     # Log task creation within the same transaction before commit
     activity_service.log(db, db_task.id, user_id, "task.created")
     await db.commit()
@@ -155,24 +157,18 @@ async def update_task(
     task_in: TaskUpdate
 ) -> Optional[Task]:
     """Modify details of a specific task. Computes field diffs and logs the change to task_activity."""
-    stmt = select(Task).where(Task.id == task_id)
-    result = await db.execute(stmt)
-    db_task = result.scalar_one_or_none()
+    db_task = await crud_task.get(db, id=task_id)
     
     if not db_task:
         return None
         
     if db_task.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to modify this task"
-        )
+        raise TaskForbiddenError()
         
     # 🔒 Category Ownership Validation (if updating category_id)
     if task_in.category_id is not None:
-        stmt = select(Category).where(Category.id == task_in.category_id, Category.user_id == user_id)
-        result = await db.execute(stmt)
-        if not result.scalar_one_or_none():
+        cat = await crud_category.get(db, id=task_in.category_id)
+        if not cat or cat.user_id != user_id:
             raise CategoryNotFoundError()
 
     # Compute field diffs BEFORE applying changes to capture genuine before values
@@ -184,7 +180,11 @@ async def update_task(
             old_str = old_val.value if isinstance(old_val, enum.Enum) else (str(old_val) if isinstance(old_val, (uuid.UUID, datetime)) else old_val)
             new_str = value.value if isinstance(value, enum.Enum) else (str(value) if isinstance(value, (uuid.UUID, datetime)) else value)
             diff[key] = {"before": old_str, "after": new_str}
-            setattr(db_task, key, value)
+            
+    # Remove tags from the diff computation, handle them separately
+    update_dict = {k: v for k, v in update_data.items() if getattr(db_task, k) != v}
+    if update_dict:
+        db_task = await crud_task.update(db, db_obj=db_task, obj_in=update_dict)
             
     if task_in.tags is not None:
         db_tags = await _resolve_tags(db, user_id, task_in.tags)
@@ -204,20 +204,14 @@ async def delete_task(
     user_id: uuid.UUID
 ) -> bool:
     """Delete a specific task and log the deletion event."""
-    stmt = select(Task).where(Task.id == task_id)
-    result = await db.execute(stmt)
-    db_task = result.scalar_one_or_none()
+    db_task = await crud_task.get(db, id=task_id)
     
     if not db_task:
         return False
         
     if db_task.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to delete this task"
-        )
+        raise TaskForbiddenError()
         
     activity_service.log(db, db_task.id, user_id, "task.deleted")
-    await db.delete(db_task)
-    await db.commit()
+    await crud_task.remove(db, id=task_id)
     return True

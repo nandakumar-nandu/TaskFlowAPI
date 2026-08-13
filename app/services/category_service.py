@@ -9,7 +9,7 @@ only query, update, or delete categories that belong to their account (strict ow
 import uuid
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from app.crud.category import category as crud_category
 from fastapi import status, status
 from app.core.exceptions import TaskNotFoundError, TaskForbiddenError, CategoryNotFoundError, CategoryForbiddenError, CommentNotFoundError, CommentForbiddenError, InvalidCredentialsError, DuplicateEmailError
 
@@ -34,9 +34,7 @@ async def get_categories(
     Returns:
         List[Category]: A list of category records ordered alphabetically.
     """
-    stmt = select(Category).where(Category.user_id == user_id).order_by(Category.name.asc())
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return await crud_category.get_by_owner(db, owner_id=user_id)
 
 
 async def create_category(
@@ -58,13 +56,10 @@ async def create_category(
     Returns:
         Category: The newly created category record.
     """
-    db_category = Category(
-        name=category_in.name,
-        user_id=user_id
+    db_category = await crud_category.create(
+        db, 
+        obj_in={"name": category_in.name, "user_id": user_id}
     )
-    db.add(db_category)
-    await db.commit()
-    await db.refresh(db_category)
     return db_category
 
 
@@ -87,9 +82,7 @@ async def get_category_by_id(
     Returns:
         Category: The category record, or None if not found.
     """
-    stmt = select(Category).where(Category.id == category_id)
-    result = await db.execute(stmt)
-    db_category = result.scalar_one_or_none()
+    db_category = await crud_category.get(db, id=category_id)
 
     if not db_category:
         return None
@@ -126,9 +119,9 @@ async def update_category(
     if not db_category:
         return None
 
-    db_category.name = category_in.name
-    await db.commit()
-    await db.refresh(db_category)
+    db_category = await crud_category.update(
+        db, db_obj=db_category, obj_in={"name": category_in.name}
+    )
     return db_category
 
 
@@ -155,6 +148,5 @@ async def delete_category(
     if not db_category:
         return False
 
-    await db.delete(db_category)
-    await db.commit()
+    await crud_category.remove(db, id=category_id)
     return True

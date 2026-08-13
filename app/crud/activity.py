@@ -1,3 +1,4 @@
+import uuid
 """CRUD operations for TaskActivity model."""
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ class CRUDActivity(CRUDBase[TaskActivity]):
     """Activity log CRUD operations."""
 
     async def get_by_task(
-        self, db: AsyncSession, *, task_id: int, limit: int = 200
+        self, db: AsyncSession, *, task_id: uuid.UUID, limit: int = 200
     ) -> List[TaskActivity]:
         """Get activity log for a task, newest first."""
         result = await db.execute(

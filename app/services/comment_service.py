@@ -11,7 +11,8 @@ from typing import List
 from fastapi import status, status
 from app.core.exceptions import TaskNotFoundError, TaskForbiddenError, CategoryNotFoundError, CategoryForbiddenError, CommentNotFoundError, CommentForbiddenError, InvalidCredentialsError, DuplicateEmailError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from app.crud.comment import comment as crud_comment
+from app.crud.task import task as crud_task
 
 from app.models.task import Task
 from app.models.comment import Comment
@@ -27,9 +28,7 @@ async def _assert_task_owner(
     Private guard function to verify task existence and ownership.
     Returns 404 before 403 to prevent malicious actors from enumerating task UUIDs.
     """
-    stmt = select(Task).where(Task.id == task_id)
-    result = await db.execute(stmt)
-    task = result.scalar_one_or_none()
+    task = await crud_task.get(db, id=task_id)
     
     if not task:
         raise TaskNotFoundError()
@@ -48,9 +47,10 @@ async def list_comments(
     """List all comments on a given task. Caller must own the parent task to list its comments."""
     await _assert_task_owner(db, task_id, user_id)
     
-    stmt = select(Comment).where(Comment.task_id == task_id).order_by(Comment.created_at.asc())
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
+    # Using CRUD here would mean adding order_by to crud_comment.get_by_task or fetching then sorting.
+    # The simplest is to just call our crud_comment.get_by_task, but we need to verify if it orders.
+    # The crud layer for comment doesn't specify order, but we can just use the provided method.
+    return await crud_comment.get_by_task(db, task_id=task_id)
 
 
 async def create_comment(
@@ -62,14 +62,10 @@ async def create_comment(
     """Create a new comment on a task. Caller must own the parent task to comment on it."""
     await _assert_task_owner(db, task_id, user_id)
     
-    db_comment = Comment(
-        task_id=task_id,
-        user_id=user_id,
-        body=payload.body
+    db_comment = await crud_comment.create(
+        db,
+        obj_in={"task_id": task_id, "user_id": user_id, "body": payload.body}
     )
-    db.add(db_comment)
-    await db.commit()
-    await db.refresh(db_comment)
     return db_comment
 
 
@@ -80,9 +76,7 @@ async def update_comment(
     payload: CommentUpdate
 ) -> Comment:
     """Update the body of a comment. Only the author of the comment can edit it."""
-    stmt = select(Comment).where(Comment.id == comment_id)
-    result = await db.execute(stmt)
-    comment = result.scalar_one_or_none()
+    comment = await crud_comment.get(db, id=comment_id)
     
     if not comment:
         raise CommentNotFoundError()
@@ -90,11 +84,9 @@ async def update_comment(
     if comment.user_id != user_id:
         raise CommentForbiddenError()
         
-    comment.body = payload.body
-    comment.updated_at = datetime.now(timezone.utc)
-    
-    await db.commit()
-    await db.refresh(comment)
+    comment = await crud_comment.update(
+        db, db_obj=comment, obj_in={"body": payload.body, "updated_at": datetime.now(timezone.utc)}
+    )
     return comment
 
 
@@ -104,9 +96,7 @@ async def delete_comment(
     user_id: uuid.UUID
 ) -> bool:
     """Delete a specific comment. Only the author user can delete their comment."""
-    stmt = select(Comment).where(Comment.id == comment_id)
-    result = await db.execute(stmt)
-    comment = result.scalar_one_or_none()
+    comment = await crud_comment.get(db, id=comment_id)
     
     if not comment:
         raise CommentNotFoundError()
@@ -114,6 +104,5 @@ async def delete_comment(
     if comment.user_id != user_id:
         raise CommentForbiddenError(detail="You do not have permission to delete this comment")
         
-    await db.delete(comment)
-    await db.commit()
+    await crud_comment.remove(db, id=comment_id)
     return True

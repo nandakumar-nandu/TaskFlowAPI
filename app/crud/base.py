@@ -15,7 +15,7 @@ class CRUDBase(Generic[ModelType]):
 
     async def get(self, db: AsyncSession, id: Any) -> Optional[ModelType]:
         """Get a single record by ID."""
-        result = await db.execute(select(self.model).where(self.model.id == id))
+        result = await db.execute(select(self.model).where(getattr(self.model, "id") == id))
         return result.scalar_one_or_none()
 
     async def get_multi(
@@ -50,6 +50,6 @@ class CRUDBase(Generic[ModelType]):
         """Delete a record by ID."""
         obj = await self.get(db, id=id)
         if obj:
-            await db.execute(delete(self.model).where(self.model.id == id))
+            await db.execute(delete(self.model).where(getattr(self.model, "id") == id))
             await db.commit()
-        return obj
+        return obj  # type: ignore

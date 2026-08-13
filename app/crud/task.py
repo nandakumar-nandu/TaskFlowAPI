@@ -1,3 +1,4 @@
+import uuid
 """CRUD operations for Task model."""
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,14 +10,11 @@ class CRUDTask(CRUDBase[Task]):
     """Task-specific CRUD operations with custom query methods."""
 
     async def get_by_owner(
-        self, db: AsyncSession, *, owner_id: int, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, *, owner_id: uuid.UUID, skip: int = 0, limit: int = 100
     ) -> List[Task]:
         """Get all tasks owned by a specific user."""
         result = await db.execute(
-            select(Task)
-            .where(Task.owner_id == owner_id)
-            .offset(skip)
-            .limit(limit)
+            select(Task).where(Task.user_id == owner_id).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
 
