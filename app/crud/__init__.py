@@ -9,5 +9,8 @@ Benefits:
 """
 from .user import user
 from .task import task
+from .category import category
+from .comment import comment
+from .activity import activity
 
-__all__ = ["user", "task"]
+__all__ = ["user", "task", "category", "comment", "activity"]
