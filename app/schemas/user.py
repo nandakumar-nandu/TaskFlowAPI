@@ -12,6 +12,17 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class UserBase(BaseModel):
+    """
+    📝 Shared base schema for user-related input payloads.
+
+    Not used directly in routes. UserCreate and UserUpdate inherit from this
+    to share the email field and its validator.
+
+    Validation rules applied to `email`:
+      - Stripped of leading/trailing whitespace.
+      - Lowercased for consistent storage (prevents case-collision duplicates).
+      - Must contain '@' and a domain '.' (basic format check).
+    """
     # 📝 Standard user fields shared across schemas
     email: str = Field(
         ...,
@@ -39,6 +50,13 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
+    """
+    📝 Request schema for POST /auth/register.
+
+    Accepts email, full_name (from UserBase), plus a plain-text password.
+    The password is validated (min 8 chars) here and then immediately hashed
+    by the route handler — the plain text is never stored.
+    """
     # 📝 Data required during user registration
     password: str = Field(
         ...,
@@ -59,6 +77,13 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
+    """
+    📝 Request schema for PATCH /users/me.
+
+    All fields are optional so the client only needs to send the fields they
+    want to change. Uses Pydantic's model_dump(exclude_unset=True) pattern in
+    the service layer to avoid overwriting fields that were not submitted.
+    """
     # 📝 Data structure used for profile updates (all fields optional)
     email: Optional[str] = Field(
         None,
@@ -107,6 +132,19 @@ class UserUpdate(BaseModel):
 
 
 class UserRead(UserBase):
+    """
+    📝 Response schema returned for all user profile endpoints.
+
+    Used as the `response_model` for:
+      POST /auth/register → 201 Created
+      GET  /auth/me       → 200 OK
+      GET  /users/me      → 200 OK
+      PATCH /users/me     → 200 OK
+      POST /users/me/avatar → 200 OK
+
+    `from_attributes=True` enables Pydantic to read field values directly from
+    the SQLAlchemy ORM User object returned by the database session.
+    """
     # 📝 Data structure returned in response bodies for user details
     id: uuid.UUID = Field(
         ...,
@@ -136,6 +174,13 @@ class UserRead(UserBase):
 
 
 class Token(BaseModel):
+    """
+    📝 Response schema returned by POST /auth/login on success.
+
+    Contains the signed JWT access token and its type ('bearer').
+    The client must include this token in subsequent authenticated requests
+    via the `Authorization: Bearer <token>` HTTP header.
+    """
     # 📝 Response payload returned upon successful login
     access_token: str = Field(
         ...,
@@ -150,6 +195,12 @@ class Token(BaseModel):
 
 
 class UserLogin(BaseModel):
+    """
+    📝 Request schema for POST /auth/login.
+
+    Accepts plain-text email and password. The route handler verifies the
+    password against the stored bcrypt hash and issues a JWT on success.
+    """
     # 📝 Request payload required for logging in
     email: str = Field(
         ...,

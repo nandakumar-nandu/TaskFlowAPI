@@ -27,8 +27,17 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """
-    🔒 Dependency to retrieve the currently authenticated user from JWT bearer token.
-    Throws HTTP 401 Unauthorized if the token is invalid, expired, or user not found.
+    🔒 FastAPI Dependency: Retrieve the currently authenticated user.
+
+    This function extracts the JWT bearer token from the Authorization header,
+    decodes it, and fetches the corresponding User object from the database.
+
+    Raises:
+        HTTPException (401): If the token is missing, invalid, expired, or the user is not found.
+        HTTPException (403): If the user's account has been deactivated.
+
+    Returns:
+        User: The SQLAlchemy ORM User instance for the logged-in user.
     """
     token = credentials.credentials
     payload = verify_token(token)
@@ -72,7 +81,14 @@ async def get_current_user(
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     """
     🛣️ POST /auth/register
-    Creates a new user account if the email is not already registered.
+
+    Creates a new user account.
+
+    Validates that the provided email is not already registered. The plain-text
+    password is cryptographically hashed using bcrypt before saving to the database.
+
+    Returns:
+        UserRead: The newly created user's profile metadata.
     """
     # ⚙️ Check if a user with this email already exists
     stmt = select(User).where(User.email == user_in.email)
@@ -106,7 +122,14 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     """
     🛣️ POST /auth/login
-    Authenticates user credentials and returns a signed JWT access token.
+
+    Authenticates user credentials and issues a JWT access token.
+
+    Verifies the submitted email exists and the password matches the stored bcrypt hash.
+    Generates a signed JWT with a short expiration window (configured in settings).
+
+    Returns:
+        Token: A JSON payload containing the `access_token` and `token_type` ("bearer").
     """
     # ⚙️ Fetch user by email
     stmt = select(User).where(User.email == credentials.email)
@@ -141,6 +164,13 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
 async def get_me(current_user: User = Depends(get_current_user)):
     """
     🛣️ GET /auth/me
+
     Retrieves profile information for the currently authenticated user.
+
+    Since the `get_current_user` dependency already fetches the user from the
+    database, this route simply returns that pre-fetched User object directly.
+
+    Returns:
+        UserRead: The authenticated user's profile metadata.
     """
     return current_user

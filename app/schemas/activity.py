@@ -13,7 +13,21 @@ from pydantic import BaseModel, Field
 
 class ActivityRead(BaseModel):
     """
-    📝 Response payload structure representing an immutable audit log entry.
+    📝 Response schema for GET /tasks/{task_id}/activity.
+
+    Represents a single immutable audit log entry in the task's activity trail.
+
+    Fields:
+      id          → Unique identifier of this log entry.
+      task_id     → The task this entry audits.
+      user_id     → The user who performed the action (null if the user was later deleted).
+      action      → Event type string: 'task.created', 'task.updated', or 'task.deleted'.
+      diff        → For 'task.updated' events: JSON map of changed fields as
+                    {"field_name": {"before": old_value, "after": new_value}}.
+                    Null for 'task.created' and 'task.deleted' events.
+      occurred_at → UTC timestamp when this event was recorded.
+
+    `from_attributes=True` enables ORM-to-Pydantic mapping from TaskActivity objects.
     """
     id: uuid.UUID = Field(
         ...,

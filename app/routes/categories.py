@@ -26,8 +26,11 @@ async def read_categories(
 ):
     """
     🛣️ GET /categories
-    Retrieve all categories owned by the authenticated user.
-    Protected by JWT.
+
+    Retrieve a flat list of all categories created by the authenticated user.
+
+    Returns:
+        List[CategoryRead]: A list of category objects.
     """
     return await category_service.get_categories(db=db, user_id=current_user.id)
 
@@ -40,8 +43,11 @@ async def create_new_category(
 ):
     """
     🛣️ POST /categories
-    Create a new category for the authenticated user.
-    Protected by JWT.
+
+    Create a new category bucket for the authenticated user.
+
+    Returns:
+        CategoryRead: The newly created category.
     """
     return await category_service.create_category(
         db=db,
@@ -58,9 +64,14 @@ async def read_category_by_id(
 ):
     """
     🛣️ GET /categories/{category_id}
-    Retrieve details of a specific category by ID.
-    Enforces ownership check.
-    Protected by JWT.
+
+    Retrieve details of a specific category by its UUID.
+
+    Raises:
+        HTTPException (404): If the category does not exist (or doesn't belong to the user).
+
+    Returns:
+        CategoryRead: The category details.
     """
     db_category = await category_service.get_category_by_id(
         db=db,
@@ -84,9 +95,14 @@ async def update_existing_category(
 ):
     """
     🛣️ PUT /categories/{category_id}
-    Update details of a specific category.
-    Enforces ownership check.
-    Protected by JWT.
+
+    Rename an existing category.
+
+    Raises:
+        HTTPException (404): If the category does not exist (or doesn't belong to the user).
+
+    Returns:
+        CategoryRead: The updated category details.
     """
     db_category = await category_service.update_category(
         db=db,
@@ -110,9 +126,18 @@ async def delete_existing_category(
 ):
     """
     🛣️ DELETE /categories/{category_id}
-    Delete a specific category.
-    Enforces ownership check.
-    Protected by JWT.
+
+    Delete a category.
+
+    Deleting a category does not delete its assigned tasks. Instead, any tasks
+    using this category will have their `category_id` set to NULL automatically
+    by PostgreSQL cascade rules.
+
+    Raises:
+        HTTPException (404): If the category does not exist (or doesn't belong to the user).
+
+    Returns:
+        HTTP 204 No Content on successful deletion.
     """
     success = await category_service.delete_category(
         db=db,

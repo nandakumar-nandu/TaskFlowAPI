@@ -21,8 +21,14 @@ router = APIRouter(prefix="/users", tags=["Users"])
 async def read_my_profile(current_user: User = Depends(get_current_user)):
     """
     🛣️ GET /users/me
+
     Retrieves profile data of the logged-in user.
-    🔒 Authorization: uses get_current_user dependency directly (no extra database lookup needed).
+
+    Unlike /auth/me, this route exists under the /users domain to group profile
+    management logically, though it performs the same function via get_current_user.
+
+    Returns:
+        UserRead: The authenticated user's profile metadata.
     """
     return current_user
 
@@ -35,7 +41,14 @@ async def update_my_profile(
 ):
     """
     🛣️ PATCH /users/me
+
     Applies partial profile updates.
+
+    Only the fields provided in the JSON payload are updated. All other fields
+    remain unchanged.
+
+    Returns:
+        UserRead: The updated user's profile metadata.
     """
     return await user_service.update_user(
         db=db,
@@ -52,8 +65,20 @@ async def upload_my_avatar(
 ):
     """
     🛣️ POST /users/me/avatar
-    Uploads a new avatar image.
+
+    Uploads a new avatar image for the user.
+
+    The file is stored physically on disk in the `media/avatars` directory, and
+    the user's `avatar_url` database field is updated with the file path.
+    Files exceeding 5 MB are rejected by the UploadSizeLimitMiddleware.
+
     Accepted MIME types: image/jpeg, image/png, image/webp.
+
+    Raises:
+        HTTPException (415): If the file format is unsupported.
+
+    Returns:
+        UserRead: The user's updated profile containing the new avatar_url.
     """
     # 🧪 Validate MIME Type
     if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:

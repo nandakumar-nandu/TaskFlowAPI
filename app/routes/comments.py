@@ -27,8 +27,18 @@ async def get_comments_list(
 ):
     """
     🛣️ GET /tasks/{task_id}/comments
+
     Retrieves all comments associated with the specified task.
-    Requires user ownership of the parent task.
+
+    Enforces task-level ownership: The user must own the parent task to view its comments.
+    Comments are returned in chronological order (oldest to newest).
+
+    Raises:
+        HTTPException (404): If the parent task does not exist.
+        HTTPException (403): If the user does not own the parent task.
+
+    Returns:
+        List[CommentRead]: The list of comments on the task.
     """
     return await comment_service.list_comments(
         db=db,
@@ -46,8 +56,17 @@ async def create_new_comment(
 ):
     """
     🛣️ POST /tasks/{task_id}/comments
+
     Adds a new comment to the specified task.
-    Requires user ownership of the parent task.
+
+    Enforces task-level ownership: The user must own the parent task to comment on it.
+
+    Raises:
+        HTTPException (404): If the parent task does not exist.
+        HTTPException (403): If the user does not own the parent task.
+
+    Returns:
+        CommentRead: The newly created comment.
     """
     return await comment_service.create_comment(
         db=db,
@@ -67,8 +86,18 @@ async def update_existing_comment(
 ):
     """
     🛣️ PATCH /tasks/{task_id}/comments/{comment_id}
+
     Updates the body text of a comment.
-    Enforces author ownership check.
+
+    Enforces comment authorship check: Only the user who wrote the comment
+    can modify it. The service layer updates the `updated_at` timestamp.
+
+    Raises:
+        HTTPException (404): If the comment does not exist.
+        HTTPException (403): If the user is not the author of the comment.
+
+    Returns:
+        CommentRead: The updated comment.
     """
     return await comment_service.update_comment(
         db=db,
@@ -87,8 +116,18 @@ async def delete_existing_comment(
 ):
     """
     🛣️ DELETE /tasks/{task_id}/comments/{comment_id}
+
     Deletes a specific comment.
-    Enforces author ownership check.
+
+    Enforces comment authorship check: Only the user who wrote the comment
+    can delete it.
+
+    Raises:
+        HTTPException (404): If the comment does not exist.
+        HTTPException (403): If the user is not the author of the comment.
+
+    Returns:
+        HTTP 204 No Content on successful deletion.
     """
     await comment_service.delete_comment(
         db=db,

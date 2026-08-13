@@ -12,6 +12,12 @@ from pydantic import BaseModel, Field
 
 
 class CommentCreate(BaseModel):
+    """
+    📝 Request schema for POST /tasks/{task_id}/comments.
+
+    The `body` field is required and validated to be between 1 and 2000 characters.
+    Empty comment bodies are explicitly rejected by the min_length=1 constraint.
+    """
     # 📝 Data structure used for posting a comment
     body: str = Field(
         ...,
@@ -23,6 +29,13 @@ class CommentCreate(BaseModel):
 
 
 class CommentUpdate(BaseModel):
+    """
+    📝 Request schema for PATCH /tasks/{task_id}/comments/{comment_id}.
+
+    Replaces the entire comment body. This is a full replacement (not partial),
+    so the `body` field is required even though only the body can be updated.
+    The service layer also stamps the `updated_at` timestamp on save.
+    """
     # 📝 Data structure used for full replacement of a comment body
     body: str = Field(
         ...,
@@ -34,6 +47,16 @@ class CommentUpdate(BaseModel):
 
 
 class CommentRead(BaseModel):
+    """
+    📝 Response schema for all comment endpoints that return a comment.
+
+    Used as the `response_model` for:
+      GET  /tasks/{task_id}/comments              → 200 OK (as list element)
+      POST /tasks/{task_id}/comments              → 201 Created
+      PATCH /tasks/{task_id}/comments/{id}        → 200 OK
+
+    `updated_at` is None until the comment has been edited at least once.
+    """
     # 📝 Response payload structure representing a comment
     id: uuid.UUID = Field(
         ...,

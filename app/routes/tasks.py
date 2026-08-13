@@ -37,9 +37,14 @@ async def read_tasks(
 ):
     """
     🛣️ GET /tasks
-    Retrieve a paginated, sorted list of tasks owned by the user.
-    Supports optional status, priority, category, and tag filtering.
-    Protected by JWT.
+
+    Retrieve a paginated, sorted list of tasks owned by the authenticated user.
+
+    Supports dynamic filtering via query parameters (status, priority, category_id, tag).
+    Pagination is controlled via `page` and `limit`. Sorting is controlled via `sort` and `order`.
+
+    Returns:
+        TaskListResponse: A paginated envelope containing the list of tasks and pagination metadata.
     """
     return await task_service.get_tasks(
         db=db,
@@ -64,8 +69,14 @@ async def create_new_task(
 ):
     """
     🛣️ POST /tasks
+
     Create a new task for the authenticated user.
-    Protected by JWT.
+
+    Optionally links the task to a Category (if category_id is provided).
+    Optionally creates or reuses Tags (if a list of tag strings is provided).
+
+    Returns:
+        TaskRead: The fully populated task object including eagerly-loaded tags.
     """
     return await task_service.create_task(
         db=db,
@@ -82,9 +93,17 @@ async def read_task_by_id(
 ):
     """
     🛣️ GET /tasks/{task_id}
-    Retrieve details of a specific task by ID.
-    Enforces ownership check.
-    Protected by JWT.
+
+    Retrieve details of a specific task by its UUID.
+
+    Enforces ownership: The requesting user must own the task.
+
+    Raises:
+        HTTPException (404): If the task does not exist.
+        HTTPException (403): If the task belongs to a different user.
+
+    Returns:
+        TaskRead: The task details.
     """
     stmt = select(Task).where(Task.id == task_id)
     result = await db.execute(stmt)
@@ -115,9 +134,17 @@ async def update_existing_task(
 ):
     """
     🛣️ PUT /tasks/{task_id}
-    Update details of a specific task.
-    Enforces ownership check.
-    Protected by JWT.
+
+    Update an existing task.
+
+    Only updates the fields explicitly provided in the payload. If the `tags` array
+    is provided, it completely replaces the current tags for the task.
+
+    Raises:
+        HTTPException (404): If the task does not exist (or doesn't belong to the user).
+
+    Returns:
+        TaskRead: The updated task details.
     """
     db_task = await task_service.update_task(
         db=db,
@@ -141,9 +168,16 @@ async def delete_existing_task(
 ):
     """
     🛣️ DELETE /tasks/{task_id}
-    Delete a specific task.
-    Enforces ownership check.
-    Protected by JWT.
+
+    Permanently delete a specific task.
+
+    Cascades to delete all comments associated with this task.
+
+    Raises:
+        HTTPException (404): If the task does not exist (or doesn't belong to the user).
+
+    Returns:
+        HTTP 204 No Content on successful deletion.
     """
     success = await task_service.delete_task(
         db=db,
@@ -167,8 +201,18 @@ async def read_task_activity(
 ):
     """
     🛣️ GET /tasks/{task_id}/activity
+
     Retrieves the append-only activity audit trail for a task.
-    🔒 Authorization: Only the task owner can read the activity log.
+
+    The audit trail records lifecycle events (created, updated, deleted) and includes
+    a JSON diff of changed fields for update events.
+
+    Raises:
+        HTTPException (404): If the task does not exist.
+        HTTPException (403): If the requesting user does not own the task.
+
+    Returns:
+        List[ActivityRead]: A list of activity records, ordered newest to oldest.
     """
     # 🔒 Ownership check: Verify task exists and belongs to the authenticated user
     stmt = select(Task).where(Task.id == task_id)

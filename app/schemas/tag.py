@@ -11,6 +11,13 @@ from pydantic import BaseModel, Field
 
 
 class TagBase(BaseModel):
+    """
+    📝 Shared base schema for tag input payloads.
+
+    Tags are identified purely by name within a user's scope. The same name
+    (e.g. 'work') can exist for different users simultaneously without conflict,
+    enforced by the UniqueConstraint(name, user_id) in the Tag model.
+    """
     # 📝 Standard tag fields shared across schemas
     name: str = Field(
         ...,
@@ -21,11 +28,24 @@ class TagBase(BaseModel):
 
 
 class TagCreate(TagBase):
+    """
+    📝 Schema for explicit tag creation.
+
+    In practice, tags are created implicitly via the `tags` field in TaskCreate
+    and TaskUpdate. The _resolve_tags helper in task_service.py handles the
+    create-or-reuse logic automatically.
+    """
     # 📝 Data required during tag creation
     pass
 
 
 class TagRead(TagBase):
+    """
+    📝 Response schema for tags embedded inside TaskRead responses.
+
+    Tags are never returned standalone — they always appear inside the `tags`
+    array of a TaskRead object. `from_attributes=True` enables ORM mapping.
+    """
     # 📝 Data structure returned in response bodies for tag details
     id: uuid.UUID = Field(
         ...,

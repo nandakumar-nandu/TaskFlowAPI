@@ -12,6 +12,12 @@ from pydantic import BaseModel, Field
 
 
 class CategoryBase(BaseModel):
+    """
+    📝 Shared base schema for category input payloads.
+
+    The `name` field has a min_length=1 constraint to prevent empty string
+    category names from being accepted. Max 255 characters.
+    """
     # 📝 Standard category fields shared across schemas
     name: str = Field(
         ...,
@@ -23,16 +29,36 @@ class CategoryBase(BaseModel):
 
 
 class CategoryCreate(CategoryBase):
+    """
+    📝 Request schema for POST /categories.
+
+    Inherits `name` from CategoryBase. No additional fields are required
+    since user ownership is assigned automatically from the JWT token context.
+    """
     # 📝 Data required during category creation
     pass
 
 
 class CategoryUpdate(CategoryBase):
+    """
+    📝 Request schema for PUT /categories/{category_id}.
+
+    Inherits `name` from CategoryBase. Only the name can be changed.
+    """
     # 📝 Data required to update category
     pass
 
 
 class CategoryRead(CategoryBase):
+    """
+    📝 Response schema for all category endpoints that return a category.
+
+    Used as the `response_model` for:
+      GET  /categories          → 200 OK (as list element)
+      POST /categories          → 201 Created
+      GET  /categories/{id}     → 200 OK
+      PUT  /categories/{id}     → 200 OK
+    """
     # 📝 Data structure returned in response bodies for category details
     id: uuid.UUID = Field(
         ...,

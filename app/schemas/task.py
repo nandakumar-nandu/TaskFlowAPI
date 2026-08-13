@@ -15,6 +15,13 @@ from app.schemas.tag import TagRead
 
 
 class TaskBase(BaseModel):
+    """
+    📝 Shared base schema for task input payloads.
+
+    Defines the core task fields with their validation rules and defaults.
+    Inherited by TaskCreate (for creation) and used as the field source for
+    TaskRead (for response serialization).
+    """
     # 📝 Standard task fields shared across schemas
     title: str = Field(
         ...,
@@ -51,6 +58,13 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
+    """
+    📝 Request schema for POST /tasks.
+
+    Accepts all TaskBase fields plus an optional `tags` list.
+    Tag names are resolved by the service layer: existing tags (matched by
+    name + user_id) are reused; new tag names trigger tag creation automatically.
+    """
     # 📝 Data required during task creation
     tags: Optional[List[str]] = Field(
         None,
@@ -60,6 +74,13 @@ class TaskCreate(TaskBase):
 
 
 class TaskUpdate(BaseModel):
+    """
+    📝 Request schema for PUT /tasks/{task_id}.
+
+    All fields are optional — only submitted fields are applied.
+    If `tags` is provided (even as an empty list), it replaces ALL existing
+    tag associations on the task. Omitting `tags` entirely leaves tags unchanged.
+    """
     # 📝 Data structure used for modifying tasks (all fields optional)
     title: Optional[str] = Field(
         None,
@@ -101,6 +122,18 @@ class TaskUpdate(BaseModel):
 
 
 class TaskRead(TaskBase):
+    """
+    📝 Response schema for all task-related endpoints that return a single task.
+
+    Used as the `response_model` for:
+      POST /tasks       → 201 Created
+      GET  /tasks/{id}  → 200 OK
+      PUT  /tasks/{id}  → 200 OK
+
+    Tags are eagerly loaded by the ORM (lazy="selectin") so they are always
+    present in the response without requiring an extra query.
+    `from_attributes=True` enables ORM-to-schema mapping.
+    """
     # 📝 Data structure returned in response bodies for task details
     id: uuid.UUID = Field(
         ...,
@@ -129,6 +162,19 @@ class TaskRead(TaskBase):
 
 
 class TaskListResponse(BaseModel):
+    """
+    📝 Response schema for GET /tasks.
+
+    Wraps a paginated list of tasks with metadata about the total result set.
+    Allows clients to implement pagination UI (e.g. "Page 2 of 5").
+
+    Fields:
+      tasks       → The current page of TaskRead objects
+      total_count → Total matching tasks across ALL pages
+      limit       → The page size used in the query
+      offset      → Number of records skipped before this page
+      pages       → Total pages = ceil(total_count / limit)
+    """
     # 📝 Paginated list response wrapper containing metadata
     tasks: List[TaskRead] = Field(
         ...,
