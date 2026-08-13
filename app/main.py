@@ -23,6 +23,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.auth import router as auth_router
 from app.routes.tasks import router as tasks_router
@@ -74,9 +75,17 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ⚙️ REGISTER MIDDLEWARE (execution order is LIFO — last-in is outermost)
-# SlowAPIMiddleware: counts requests per IP and enforces the rate limit.
+# Rate limiter must come before auth middleware to prevent unnecessary token validation on rate-limited requests.
 app.add_middleware(SlowAPIMiddleware)
-# UploadSizeLimitMiddleware: checks Content-Length on POST requests.
+
+# We allow all origins in development; restrict to specific domains in production.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Rejects payloads over 5 MB with HTTP 413 Payload Too Large.
 app.add_middleware(UploadSizeLimitMiddleware)
 

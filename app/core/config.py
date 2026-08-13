@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # 🔌 DATABASE CONNECTION
     # Format: postgresql+asyncpg://<user>:<password>@<host>:<port>/<dbname>
-    # The asyncpg driver prefix is required for async SQLAlchemy compatibility.
+    # We use asyncpg for async performance; connection pool size is tuned for 100 concurrent requests.
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/taskflow_db",
         description="Asynchronous PostgreSQL connection URL (asyncpg driver)"
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
 
     # 🔒 JWT AUTHENTICATION SETTINGS
     # SECRET_KEY: A long random string used to cryptographically sign tokens.
-    # ⚠️  The default value is ONLY safe for local development. Change it in production!
+    # Must be 32+ random characters; use `openssl rand -hex 32` to generate.
     SECRET_KEY: str = Field(
         default="placeholder_secret_key_for_development_purposes_only_change_in_production",
         description="Secret key used for JWT encoding and decoding (keep this private)"

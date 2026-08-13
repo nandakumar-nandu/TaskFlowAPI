@@ -19,6 +19,7 @@ Key concepts for beginners:
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import NullPool
 
 from app.core.config import settings
 
@@ -35,6 +36,7 @@ engine = create_async_engine(
     echo=False,
     future=True,
     pool_pre_ping=True,
+    poolclass=NullPool,  # We use NullPool for async to avoid connection leaks in high-concurrency scenarios.
 )
 
 # ⚙️ ASYNC SESSION FACTORY
@@ -82,6 +84,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     The `async with` context manager handles the session lifecycle. The
     `finally` clause guarantees the session is always closed — even on errors —
     preventing connection pool exhaustion.
+    This pattern ensures sessions are closed even if exceptions occur.
     """
     async with async_session_maker() as session:
         try:
